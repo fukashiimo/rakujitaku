@@ -472,12 +472,22 @@ h2 {
   align-items: center;
   padding: 13px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.item-row:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .item-row input {
   width: 19px;
   height: 19px;
   accent-color: var(--accent-2);
+}
+
+.item-row label {
+  cursor: pointer;
 }
 
 .item-row.is-checked label {
@@ -492,6 +502,7 @@ h2 {
   border-radius: var(--radius);
   background: transparent;
   color: var(--danger);
+  cursor: pointer;
 }
 
 .add-form {

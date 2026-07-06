@@ -199,6 +199,14 @@ function addItem(name) {
   renderChecklist();
 }
 
+function toggleItem(itemId) {
+  const item = state.items.find((entry) => entry.id === itemId);
+  if (!item) return;
+
+  item.checked = !item.checked;
+  renderChecklist();
+}
+
 function getSavedTrips() {
   try {
     const trips = JSON.parse(localStorage.getItem("rakujitaku_saved_trips"));
@@ -297,6 +305,16 @@ document.addEventListener("click", (event) => {
       state.removedSuggestions.push(normalizeItemName(item.name));
       state.items = state.items.filter((entry) => entry.id !== item.id);
       renderChecklist();
+    }
+    return;
+  }
+
+  const itemRow = event.target.closest(".item-row");
+  const directControl = event.target.closest("input, label, button");
+  if (itemRow && !directControl) {
+    const input = itemRow.querySelector("[data-item]");
+    if (input) {
+      toggleItem(input.dataset.item);
     }
   }
 });
