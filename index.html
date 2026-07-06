@@ -124,12 +124,25 @@
           <p class="subcopy">チェック状態は保存せず、泊数と持ち物だけを残します。</p>
         </header>
 
-        <div class="panel done-panel">
-          <pre aria-hidden="true" class="ascii-box">┌────────────────────┐
-│                    │
-│  支度ができました  │
-│                    │
-└────────────────────┘</pre>
+        <div class="panel done-panel game-panel">
+          <div class="game-stage clear-stage" aria-hidden="true">
+            <div class="pixel-stars">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="game-title clear-title">
+              <span>CLEAR</span>
+              <strong>支度ができました</strong>
+            </div>
+            <div class="clear-badge">READY</div>
+            <div class="pixel-bag">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
           <button class="primary-action full" type="button" id="saveTripButton">
             この支度を保存する
           </button>
