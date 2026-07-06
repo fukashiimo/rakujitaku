@@ -177,23 +177,29 @@ h2 {
   right: 18px;
   bottom: 16px;
   display: flex;
-  gap: 8px;
+  gap: 2px;
   color: var(--accent);
   font-family: "SFMono-Regular", Consolas, monospace;
   font-weight: 800;
 }
 
-.loading-steps span {
+.loading-label {
+  margin-right: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.loading-dot {
   opacity: 0.18;
   transform: translateY(4px);
   animation: loadingStep 1.5s steps(1, end) infinite;
 }
 
-.loading-steps span:nth-child(2) {
+.loading-dot:nth-child(3) {
   animation-delay: 0.5s;
 }
 
-.loading-steps span:nth-child(3) {
+.loading-dot:nth-child(4) {
   animation-delay: 1s;
 }
 
