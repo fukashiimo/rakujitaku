@@ -405,12 +405,22 @@ h2 {
   gap: 12px;
   align-items: center;
   padding: 15px;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.check-row:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .check-row input {
   width: 20px;
   height: 20px;
   accent-color: var(--accent-2);
+}
+
+.check-row span {
+  cursor: pointer;
 }
 
 .progress-box {
