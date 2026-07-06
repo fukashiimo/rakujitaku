@@ -236,13 +236,18 @@ h2 {
 }
 
 .progress-box {
+  position: sticky;
+  top: 10px;
+  z-index: 10;
   display: grid;
   gap: 12px;
   margin-bottom: 18px;
   padding: 16px;
   border: 1px solid rgba(149, 213, 178, 0.22);
   border-radius: var(--radius);
-  background: rgba(149, 213, 178, 0.08);
+  background: rgba(16, 24, 20, 0.94);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(10px);
 }
 
 .progress-box div:first-child {
