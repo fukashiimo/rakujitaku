@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>らくじたく</title>
+    <title>さいしょのらくじたく</title>
     <meta
       name="description"
       content="泊数を選ぶだけで旅行や帰省の持ち物チェックリストを作れる、静的フロントエンドアプリです。"
@@ -15,18 +15,33 @@
       <section class="screen is-active" id="homeScreen" aria-labelledby="homeTitle">
         <header class="app-header">
           <p class="eyebrow">RAKUJITAKU</p>
-          <h1 id="homeTitle">らくじたく</h1>
+          <h1 id="homeTitle">さいしょのらくじたく</h1>
           <p class="lead">泊数を選んだら、あとはチェックするだけ。</p>
         </header>
 
-        <div class="panel hero-panel">
-          <pre aria-hidden="true" class="ascii-box">┌────────────────────┐
-│  らくじたく        │
-│                    │
-│  [ 支度をはじめる ]│
-│                    │
-│  いつもの支度      │
-└────────────────────┘</pre>
+        <div class="panel hero-panel game-panel">
+          <div class="game-stage" aria-hidden="true">
+            <div class="pixel-stars">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="game-title">
+              <span>さいしょの</span>
+              <strong>らくじたく</strong>
+            </div>
+            <div class="loading-steps">
+              <span>①.</span>
+              <span>②..</span>
+              <span>③...</span>
+            </div>
+            <div class="pixel-bag">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
           <button class="primary-action" type="button" data-go="nights">
             支度をはじめる
           </button>

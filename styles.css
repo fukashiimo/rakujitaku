@@ -22,8 +22,11 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     radial-gradient(circle at 20% 0%, rgba(248, 200, 106, 0.13), transparent 28rem),
     linear-gradient(180deg, #111 0%, var(--bg) 26rem);
+  background-size: 100% 100%, 28px 28px, 100% 100%, 100% 100%;
   color: var(--text);
 }
 
@@ -83,6 +86,11 @@ h1 {
   letter-spacing: 0;
 }
 
+.app-header h1 {
+  font-size: clamp(1.9rem, 8.2vw, 3.2rem);
+  white-space: nowrap;
+}
+
 h2 {
   margin-bottom: 0;
   font-size: 1.2rem;
@@ -107,6 +115,141 @@ h2 {
 .hero-panel {
   display: grid;
   gap: 22px;
+}
+
+.game-panel {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(145deg, #222, #101010 64%, #090909);
+  background-size: 18px 18px, 18px 18px, 100% 100%;
+}
+
+.game-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0 48%, rgba(255, 255, 255, 0.04) 50%, transparent 52% 100%);
+  background-size: 100% 8px;
+  opacity: 0.36;
+}
+
+.game-stage {
+  position: relative;
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  padding: 26px 14px 32px;
+  border: 1px solid rgba(248, 200, 106, 0.32);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.42);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 -18px 34px rgba(0, 0, 0, 0.35);
+}
+
+.game-title {
+  display: grid;
+  gap: 8px;
+  text-align: center;
+  text-shadow: 0 3px 0 #000, 0 0 28px rgba(248, 200, 106, 0.22);
+  animation: titleFloat 2.4s ease-in-out infinite;
+}
+
+.game-title span {
+  color: var(--muted);
+  font-size: clamp(1.1rem, 5vw, 1.5rem);
+  font-weight: 800;
+}
+
+.game-title strong {
+  color: var(--text);
+  font-size: clamp(2.4rem, 13vw, 4rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.loading-steps {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  display: flex;
+  gap: 8px;
+  color: var(--accent);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-weight: 800;
+}
+
+.loading-steps span {
+  opacity: 0.18;
+  transform: translateY(4px);
+  animation: loadingStep 1.5s steps(1, end) infinite;
+}
+
+.loading-steps span:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.loading-steps span:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.pixel-stars span,
+.pixel-bag span {
+  position: absolute;
+  display: block;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  box-shadow: 0 0 14px rgba(248, 200, 106, 0.7);
+}
+
+.pixel-stars span:nth-child(1) {
+  top: 24px;
+  left: 28px;
+  animation: blinkPixel 1.8s infinite;
+}
+
+.pixel-stars span:nth-child(2) {
+  top: 58px;
+  right: 42px;
+  background: var(--accent-2);
+  animation: blinkPixel 2.2s 0.4s infinite;
+}
+
+.pixel-stars span:nth-child(3) {
+  right: 92px;
+  bottom: 78px;
+  animation: blinkPixel 2s 0.8s infinite;
+}
+
+.pixel-stars span:nth-child(4) {
+  left: 72px;
+  bottom: 42px;
+  background: #c8ced9;
+  animation: blinkPixel 1.6s 0.2s infinite;
+}
+
+.pixel-bag span {
+  left: 22px;
+  bottom: 22px;
+  background: #8f6b3c;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.pixel-bag span:nth-child(2) {
+  left: 30px;
+  bottom: 30px;
+  background: #f8c86a;
+}
+
+.pixel-bag span:nth-child(3) {
+  left: 38px;
+  bottom: 22px;
+  background: #8f6b3c;
 }
 
 .ascii-box {
@@ -377,5 +520,43 @@ h2 {
 
   .option-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes titleFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes loadingStep {
+  0%,
+  33% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  34%,
+  100% {
+    opacity: 0.18;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes blinkPixel {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
   }
 }
