@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>らくじたく</title>
+    <meta
+      name="description"
+      content="泊数を選ぶだけで旅行や帰省の持ち物チェックリストを作れる、静的フロントエンドアプリです。"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="screen is-active" id="homeScreen" aria-labelledby="homeTitle">
+        <header class="app-header">
+          <p class="eyebrow">RAKUJITAKU</p>
+          <h1 id="homeTitle">らくじたく</h1>
+          <p class="lead">泊数を選んだら、あとはチェックするだけ。</p>
+        </header>
+
+        <div class="panel hero-panel">
+          <pre aria-hidden="true" class="ascii-box">┌────────────────────┐
+│  らくじたく        │
+│                    │
+│  [ 支度をはじめる ]│
+│                    │
+│  いつもの支度      │
+└────────────────────┘</pre>
+          <button class="primary-action" type="button" data-go="nights">
+            支度をはじめる
+          </button>
+        </div>
+
+        <section class="section-block" aria-labelledby="savedTitle">
+          <div class="section-heading">
+            <h2 id="savedTitle">いつもの支度</h2>
+            <span id="savedCount">0/3</span>
+          </div>
+          <div class="saved-list" id="savedList"></div>
+        </section>
+      </section>
+
+      <section class="screen" id="nightsScreen" aria-labelledby="nightsTitle">
+        <button class="back-button" type="button" data-go="home">戻る</button>
+        <header class="screen-header">
+          <p class="eyebrow">STEP 1</p>
+          <h1 id="nightsTitle">何泊しますか？</h1>
+        </header>
+
+        <div class="option-grid" id="nightOptions" role="radiogroup" aria-label="泊数">
+          <button class="option-card" type="button" data-nights="1">1泊</button>
+          <button class="option-card" type="button" data-nights="2">2泊</button>
+          <button class="option-card" type="button" data-nights="3">3泊</button>
+          <button class="option-card" type="button" data-nights="4">それ以上</button>
+        </div>
+      </section>
+
+      <section class="screen" id="prefsScreen" aria-labelledby="prefsTitle">
+        <button class="back-button" type="button" data-go="nights">戻る</button>
+        <header class="screen-header">
+          <p class="eyebrow">STEP 2</p>
+          <h1 id="prefsTitle">必要なものを選ぶ</h1>
+          <p class="subcopy">この質問は初回だけ。次からは同じ設定を使えます。</p>
+        </header>
+
+        <div class="check-stack" id="preferenceList"></div>
+        <button class="primary-action full" type="button" id="buildListButton">チェックリストへ</button>
+      </section>
+
+      <section class="screen" id="listScreen" aria-labelledby="listTitle">
+        <button class="back-button" type="button" data-go="nights">泊数を変える</button>
+        <header class="screen-header compact">
+          <p class="eyebrow">CHECKLIST</p>
+          <h1 id="listTitle">持ち物チェック</h1>
+          <p class="subcopy" id="tripSummary"></p>
+        </header>
+
+        <div class="progress-box">
+          <div>
+            <strong id="progressText">0 / 0</strong>
+            <span>準備済み</span>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <span id="progressBar"></span>
+          </div>
+        </div>
+
+        <div class="list-area" id="checklist"></div>
+
+        <form class="add-form" id="addForm">
+          <label for="itemName">持ち物を追加</label>
+          <div class="add-row">
+            <input id="itemName" name="itemName" type="text" autocomplete="off" placeholder="例：モバイルバッテリー" />
+            <button type="submit">追加</button>
+          </div>
+        </form>
+
+        <div class="suggestions" id="suggestions" aria-label="よく使う持ち物"></div>
+
+        <button class="primary-action full" type="button" id="completeButton">完了</button>
+      </section>
+
+      <section class="screen" id="doneScreen" aria-labelledby="doneTitle">
+        <header class="screen-header">
+          <p class="eyebrow">DONE</p>
+          <h1 id="doneTitle">すべて準備完了</h1>
+          <p class="subcopy">チェック状態は保存せず、泊数と持ち物だけを残します。</p>
+        </header>
+
+        <div class="panel done-panel">
+          <pre aria-hidden="true" class="ascii-box">┌────────────────────┐
+│                    │
+│  支度ができました  │
+│                    │
+└────────────────────┘</pre>
+          <button class="primary-action full" type="button" id="saveTripButton">
+            この支度を保存する
+          </button>
+          <button class="secondary-action full" type="button" data-go="home">ホームへ戻る</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
