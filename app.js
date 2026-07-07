@@ -122,6 +122,7 @@ const destinationDefinitions = [
 const state = {
   nights: 1,
   destination: "none",
+  customDestinations: loadCustomDestinations(),
   weatherSummary: null,
   weatherPreview: null,
   weatherPreviewRequestId: 0,
@@ -155,10 +156,96 @@ function savePreferences() {
   localStorage.setItem("rakujitaku_preferences", JSON.stringify(state.preferences));
 }
 
+function loadCustomDestinations() {
+  try {
+    const destinations = JSON.parse(localStorage.getItem("rakujitaku_custom_destinations"));
+    if (!Array.isArray(destinations)) return [];
+
+    return destinations
+      .map((destination) => ({
+        key: typeof destination.key === "string" ? destination.key : "",
+        label: normalizeDestinationLabel(destination.label || ""),
+        areaCode: null,
+        custom: true,
+      }))
+      .filter((destination) => destination.key.startsWith("custom:") && destination.label);
+  } catch (error) {
+    localStorage.removeItem("rakujitaku_custom_destinations");
+    return [];
+  }
+}
+
+function saveCustomDestinations() {
+  localStorage.setItem("rakujitaku_custom_destinations", JSON.stringify(state.customDestinations.slice(0, 30)));
+}
+
+function normalizeDestinationLabel(label) {
+  return String(label).replace(/\s+/g, " ").replace(/　+/g, " ").trim();
+}
+
 function hideMoreNightsForm() {
   const form = document.querySelector("#moreNightsForm");
   if (form) {
     form.hidden = true;
+  }
+
+  const button = document.querySelector("#moreNightsButton");
+  if (button) {
+    button.classList.remove("is-selected");
+    button.setAttribute("aria-expanded", "false");
+  }
+}
+
+function showMoreNightsForm() {
+  const form = document.querySelector("#moreNightsForm");
+  const input = document.querySelector("#customNights");
+  const button = document.querySelector("#moreNightsButton");
+  if (!form || !input || !button) return;
+
+  form.hidden = false;
+  button.classList.add("is-selected");
+  button.setAttribute("aria-expanded", "true");
+
+  window.requestAnimationFrame(() => {
+    form.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    input.focus();
+    input.select();
+  });
+}
+
+function hideDestinationForm() {
+  const form = document.querySelector("#destinationForm");
+  const button = document.querySelector("#addDestinationButton");
+  if (form) {
+    form.hidden = true;
+  }
+  if (button) {
+    button.setAttribute("aria-expanded", "false");
+  }
+}
+
+function showDestinationForm() {
+  const form = document.querySelector("#destinationForm");
+  const input = document.querySelector("#destinationName");
+  const button = document.querySelector("#addDestinationButton");
+  if (!form || !input || !button) return;
+
+  form.hidden = false;
+  button.setAttribute("aria-expanded", "true");
+
+  window.requestAnimationFrame(() => {
+    input.focus();
+  });
+}
+
+function toggleDestinationForm() {
+  const form = document.querySelector("#destinationForm");
+  if (!form) return;
+
+  if (form.hidden) {
+    showDestinationForm();
+  } else {
+    hideDestinationForm();
   }
 }
 
@@ -176,6 +263,10 @@ function showScreen(name) {
 
   if (name !== "nights") {
     hideMoreNightsForm();
+  }
+
+  if (name !== "prefs") {
+    hideDestinationForm();
   }
 
   if (name === "home") {
@@ -373,7 +464,9 @@ function renderDestinationWeatherInfo(message = null) {
 
   const destination = getDestination(state.destination);
   if (!destination.areaCode) {
-    target.textContent = "行き先を選ぶと天気と気温を確認します。";
+    target.textContent = destination.key === "none"
+      ? "行き先を選ぶと天気と気温を確認します。"
+      : "追加した行き先は天気取得なし。チェックリストは通常通り作れます。";
     return;
   }
 
@@ -427,9 +520,14 @@ function renderPreferences() {
   target.innerHTML = "";
 
   const destinationSelect = document.querySelector("#destinationSelect");
-  destinationSelect.innerHTML = destinationDefinitions
-    .map((destination) => `<option value="${destination.key}">${getDestinationOptionLabel(destination)}</option>`)
-    .join("");
+  destinationSelect.innerHTML = "";
+  getDestinations().forEach((destination) => {
+    const option = document.createElement("option");
+    option.value = destination.key;
+    option.textContent = getDestinationOptionLabel(destination);
+    destinationSelect.append(option);
+  });
+  state.destination = getDestination(state.destination).key;
   destinationSelect.value = state.destination;
   renderDestinationWeatherInfo();
 
@@ -447,7 +545,7 @@ function renderPreferences() {
 function renderChecklist() {
   const nightsLabel = state.nights === 0 ? "日帰り" : `${state.nights}泊`;
   const destination = getDestination(state.destination);
-  const destinationLabel = destination?.areaCode ? ` · ${destination.label}` : "";
+  const destinationLabel = destination.key !== "none" ? ` · ${destination.label}` : "";
   const weatherLabel = getWeatherSummaryLabel();
   document.querySelector("#tripSummary").textContent =
     `${nightsLabel}${destinationLabel}${weatherLabel}の支度`;
@@ -527,8 +625,39 @@ function addItem(name) {
   renderChecklist();
 }
 
+function getDestinations() {
+  return destinationDefinitions.concat(state.customDestinations);
+}
+
 function getDestination(key) {
-  return destinationDefinitions.find((destination) => destination.key === key) || destinationDefinitions[0];
+  return getDestinations().find((destination) => destination.key === key) || destinationDefinitions[0];
+}
+
+function addCustomDestination(label) {
+  const cleanLabel = normalizeDestinationLabel(label);
+  if (!cleanLabel) return;
+
+  const existing = getDestinations().find(
+    (destination) => normalizeDestinationLabel(destination.label) === cleanLabel,
+  );
+
+  if (existing) {
+    state.destination = existing.key;
+  } else {
+    const destination = {
+      key: `custom:${crypto.randomUUID()}`,
+      label: cleanLabel,
+      areaCode: null,
+      custom: true,
+    };
+    state.customDestinations.unshift(destination);
+    saveCustomDestinations();
+    state.destination = destination.key;
+  }
+
+  state.weatherPreview = null;
+  renderPreferences();
+  hideDestinationForm();
 }
 
 function getWeatherSummaryLabel() {
@@ -623,11 +752,12 @@ function renderSavedTrips() {
     const nightsLabel = trip.nights === 0 ? "日帰り" : `${trip.nights}泊`;
     const title = trip.name || `${nightsLabel}の支度`;
     const destination = getDestination(trip.destination || "none");
-    const destinationLabel = destination.areaCode ? ` · ${destination.label}` : "";
-    button.innerHTML = `
-      <strong>${title}</strong>
-      <span>${nightsLabel}${destinationLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用</span>
-    `;
+    const destinationLabel = destination.key !== "none" ? ` · ${destination.label}` : "";
+    const titleText = document.createElement("strong");
+    titleText.textContent = title;
+    const detailText = document.createElement("span");
+    detailText.textContent = `${nightsLabel}${destinationLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用`;
+    button.append(titleText, detailText);
     button.addEventListener("click", () => {
       trip.usedCount += 1;
       trips.splice(index, 1);
@@ -775,11 +905,12 @@ document.addEventListener("click", (event) => {
 
   const moreNightsButton = event.target.closest("#moreNightsButton");
   if (moreNightsButton) {
-    const form = document.querySelector("#moreNightsForm");
-    const input = document.querySelector("#customNights");
-    form.hidden = false;
-    input.focus();
-    input.select();
+    showMoreNightsForm();
+  }
+
+  const addDestinationButton = event.target.closest("#addDestinationButton");
+  if (addDestinationButton) {
+    toggleDestinationForm();
   }
 
   const deleteButton = event.target.closest("[data-delete]");
@@ -848,6 +979,18 @@ document.querySelector("#moreNightsForm").addEventListener("submit", (event) => 
   const nights = Math.min(30, Math.max(4, Number(input.value) || 4));
   input.value = String(nights);
   selectNights(nights);
+});
+
+document.querySelector("#destinationForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = document.querySelector("#destinationName");
+  const label = normalizeDestinationLabel(input.value);
+  if (!label) {
+    input.focus();
+    return;
+  }
+  addCustomDestination(label);
+  input.value = "";
 });
 
 document.querySelector("#addForm").addEventListener("submit", (event) => {
