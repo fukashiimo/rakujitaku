@@ -78,10 +78,63 @@ const templateDefinitions = {
   pool: { label: "プール", items: ["水着", "ゴーグル", "ビーチサンダル", "濡れたもの用の袋"] },
 };
 
+const destinationDefinitions = [
+  { key: "none", label: "未設定", areaCode: null },
+  { key: "sapporo", label: "札幌", areaCode: "016000" },
+  { key: "aomori", label: "青森", areaCode: "020000" },
+  { key: "morioka", label: "盛岡", areaCode: "030000" },
+  { key: "sendai", label: "仙台", areaCode: "040000" },
+  { key: "akita", label: "秋田", areaCode: "050000" },
+  { key: "yamagata", label: "山形", areaCode: "060000" },
+  { key: "fukushima", label: "福島", areaCode: "070000" },
+  { key: "mito", label: "水戸", areaCode: "080000" },
+  { key: "utsunomiya", label: "宇都宮", areaCode: "090000" },
+  { key: "maebashi", label: "前橋", areaCode: "100000" },
+  { key: "saitama", label: "さいたま", areaCode: "110000" },
+  { key: "chiba", label: "千葉", areaCode: "120000" },
+  { key: "tokyo", label: "東京", areaCode: "130000" },
+  { key: "yokohama", label: "横浜", areaCode: "140000" },
+  { key: "niigata", label: "新潟", areaCode: "150000" },
+  { key: "toyama", label: "富山", areaCode: "160000" },
+  { key: "kanazawa", label: "金沢", areaCode: "170000" },
+  { key: "fukui", label: "福井", areaCode: "180000" },
+  { key: "kofu", label: "甲府", areaCode: "190000" },
+  { key: "nagano", label: "長野", areaCode: "200000" },
+  { key: "gifu", label: "岐阜", areaCode: "210000" },
+  { key: "shizuoka", label: "静岡", areaCode: "220000" },
+  { key: "nagoya", label: "名古屋", areaCode: "230000" },
+  { key: "tsu", label: "津", areaCode: "240000" },
+  { key: "otsu", label: "大津", areaCode: "250000" },
+  { key: "kyoto", label: "京都", areaCode: "260000" },
+  { key: "osaka", label: "大阪", areaCode: "270000" },
+  { key: "kobe", label: "神戸", areaCode: "280000" },
+  { key: "nara", label: "奈良", areaCode: "290000" },
+  { key: "wakayama", label: "和歌山", areaCode: "300000" },
+  { key: "tottori", label: "鳥取", areaCode: "310000" },
+  { key: "matsue", label: "松江", areaCode: "320000" },
+  { key: "okayama", label: "岡山", areaCode: "330000" },
+  { key: "hiroshima", label: "広島", areaCode: "340000" },
+  { key: "yamaguchi", label: "山口", areaCode: "350000" },
+  { key: "tokushima", label: "徳島", areaCode: "360000" },
+  { key: "takamatsu", label: "高松", areaCode: "370000" },
+  { key: "matsuyama", label: "松山", areaCode: "380000" },
+  { key: "kochi", label: "高知", areaCode: "390000" },
+  { key: "fukuoka", label: "福岡", areaCode: "400000" },
+  { key: "saga", label: "佐賀", areaCode: "410000" },
+  { key: "nagasaki", label: "長崎", areaCode: "420000" },
+  { key: "kumamoto", label: "熊本", areaCode: "430000" },
+  { key: "oita", label: "大分", areaCode: "440000" },
+  { key: "miyazaki", label: "宮崎", areaCode: "450000" },
+  { key: "kagoshima", label: "鹿児島", areaCode: "460100" },
+  { key: "naha", label: "那覇", areaCode: "471000" },
+];
+
 const state = {
   nights: 1,
   transport: "train",
   template: "none",
+  destination: "none",
+  weatherSummary: null,
   preferences: loadPreferences(),
   items: [],
   removedSuggestions: [],
@@ -182,9 +235,104 @@ function buildItems() {
   state.removedSuggestions = [];
 }
 
+async function applyWeatherItems(items) {
+  state.weatherSummary = null;
+  const destination = getDestination(state.destination);
+  if (!destination?.areaCode) return;
+
+  try {
+    const forecast = await fetchForecast(destination.areaCode);
+    const summary = summarizeForecast(forecast, destination);
+    state.weatherSummary = summary;
+
+    if (summary.needsRainGear) {
+      addChecklistItem(items, "折りたたみ傘", "その他");
+      addChecklistItem(items, "雨具", "その他");
+    }
+    if (summary.needsHeatCare) {
+      addChecklistItem(items, "帽子", "衣類");
+      addChecklistItem(items, "汗拭きシート", "その他");
+      addChecklistItem(items, "飲み物", "その他");
+    }
+    if (summary.needsColdCare) {
+      addChecklistItem(items, "羽織", "衣類");
+      addChecklistItem(items, "カイロ", "その他");
+    }
+  } catch (error) {
+    state.weatherSummary = {
+      destination: destination.label,
+      unavailable: true,
+    };
+  }
+}
+
+async function buildItemsWithWeather() {
+  buildItems();
+  await applyWeatherItems(state.items);
+}
+
+async function fetchForecast(areaCode) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 3000);
+  try {
+    const response = await fetch(`https://www.jma.go.jp/bosai/forecast/data/forecast/${areaCode}.json`, {
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`forecast request failed: ${response.status}`);
+    }
+    return response.json();
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function summarizeForecast(forecast, destination) {
+  const today = forecast[0];
+  const weekly = forecast[1];
+  const weatherArea = today?.timeSeries?.[0]?.areas?.[0];
+  const popArea = today?.timeSeries?.[1]?.areas?.[0];
+  const tempArea = today?.timeSeries?.[2]?.areas?.[0];
+  const weeklyTempArea = weekly?.timeSeries?.[1]?.areas?.[0];
+  const weathers = (weatherArea?.weathers || []).join(" ");
+  const pops = (popArea?.pops || weekly?.timeSeries?.[0]?.areas?.[0]?.pops || [])
+    .filter((value) => value !== "")
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+  const temps = [
+    ...(tempArea?.temps || []),
+    ...(weeklyTempArea?.tempsMin || []),
+    ...(weeklyTempArea?.tempsMax || []),
+  ]
+    .filter((value) => value !== "")
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+
+  const maxPop = pops.length > 0 ? Math.max(...pops) : null;
+  const minTemp = temps.length > 0 ? Math.min(...temps) : null;
+  const maxTemp = temps.length > 0 ? Math.max(...temps) : null;
+
+  return {
+    destination: destination.label,
+    weatherText: weathers,
+    maxPop,
+    minTemp,
+    maxTemp,
+    needsRainGear: /雨|雪|雷/.test(weathers) || (maxPop !== null && maxPop >= 40),
+    needsHeatCare: maxTemp !== null && maxTemp >= 30,
+    needsColdCare: minTemp !== null && minTemp <= 10,
+  };
+}
+
 function renderPreferences() {
   const target = document.querySelector("#preferenceList");
   target.innerHTML = "";
+
+  const destinationSelect = document.querySelector("#destinationSelect");
+  destinationSelect.innerHTML = destinationDefinitions
+    .map((destination) => `<option value="${destination.key}">${destination.label}</option>`)
+    .join("");
+  destinationSelect.value = state.destination;
 
   document.querySelectorAll("[data-transport]").forEach((button) => {
     const selected = button.dataset.transport === state.transport;
@@ -213,7 +361,11 @@ function renderChecklist() {
   const nightsLabel = state.nights === 0 ? "日帰り" : `${state.nights}泊`;
   const templateLabel = getTemplateLabel(state.template);
   const purpose = state.template === "none" ? "" : ` · ${templateLabel}`;
-  document.querySelector("#tripSummary").textContent = `${nightsLabel} · ${getTransportLabel(state.transport)}${purpose}の支度`;
+  const destination = getDestination(state.destination);
+  const destinationLabel = destination?.areaCode ? ` · ${destination.label}` : "";
+  const weatherLabel = getWeatherSummaryLabel();
+  document.querySelector("#tripSummary").textContent =
+    `${nightsLabel} · ${getTransportLabel(state.transport)}${purpose}${destinationLabel}${weatherLabel}の支度`;
 
   const target = document.querySelector("#checklist");
   target.innerHTML = "";
@@ -296,6 +448,21 @@ function getTransportLabel(key) {
 
 function getTemplateLabel(key) {
   return templateDefinitions[key]?.label || "通常";
+}
+
+function getDestination(key) {
+  return destinationDefinitions.find((destination) => destination.key === key) || destinationDefinitions[0];
+}
+
+function getWeatherSummaryLabel() {
+  if (!state.weatherSummary) return "";
+  if (state.weatherSummary.unavailable) return " · 天気取得なし";
+
+  const labels = [];
+  if (state.weatherSummary.needsRainGear) labels.push("雨対策");
+  if (state.weatherSummary.needsHeatCare) labels.push("暑さ対策");
+  if (state.weatherSummary.needsColdCare) labels.push("寒さ対策");
+  return labels.length > 0 ? ` · ${labels.join("/")}` : " · 天気追加なし";
 }
 
 function getItemHistory() {
@@ -381,9 +548,11 @@ function renderSavedTrips() {
     const transportLabel = getTransportLabel(trip.transport || "train");
     const templateLabel = getTemplateLabel(trip.template || "none");
     const purpose = trip.template && trip.template !== "none" ? ` · ${templateLabel}` : "";
+    const destination = getDestination(trip.destination || "none");
+    const destinationLabel = destination.areaCode ? ` · ${destination.label}` : "";
     button.innerHTML = `
       <strong>${title}</strong>
-      <span>${nightsLabel} · ${transportLabel}${purpose} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用</span>
+      <span>${nightsLabel} · ${transportLabel}${purpose}${destinationLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用</span>
     `;
     button.addEventListener("click", () => {
       trip.usedCount += 1;
@@ -393,6 +562,8 @@ function renderSavedTrips() {
       state.nights = trip.nights;
       state.transport = trip.transport || "train";
       state.template = trip.template || "none";
+      state.destination = trip.destination || "none";
+      state.weatherSummary = null;
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
       state.listBackTarget = "home";
       renderChecklist();
@@ -436,6 +607,10 @@ function inferCategory(name) {
     "チケット",
     "モバイルバッテリー",
     "雨具",
+    "折りたたみ傘",
+    "汗拭きシート",
+    "飲み物",
+    "カイロ",
     "ゴーグル",
     "ビーチサンダル",
     "濡れたもの用の袋",
@@ -488,14 +663,21 @@ function saveCurrentTrip() {
   const addedItemNames = state.items.filter((item) => item.category === "追加").map((item) => item.name);
   const input = document.querySelector("#tripName");
   const name = input.value.trim();
-  const signature = `${state.nights}:${itemNames.join("|")}`;
-  const existingIndex = trips.findIndex((trip) => `${trip.nights}:${trip.itemNames.join("|")}` === signature);
+  const signature = getTripSignature({
+    nights: state.nights,
+    transport: state.transport,
+    template: state.template,
+    destination: state.destination,
+    itemNames,
+  });
+  const existingIndex = trips.findIndex((trip) => getTripSignature(trip) === signature);
 
   if (existingIndex >= 0) {
     trips[existingIndex].usedCount += 1;
     trips[existingIndex].name = name || trips[existingIndex].name || "";
     trips[existingIndex].transport = state.transport;
     trips[existingIndex].template = state.template;
+    trips[existingIndex].destination = state.destination;
     trips[existingIndex].addedItemHistory = addedItemNames;
   } else {
     trips.unshift({
@@ -503,6 +685,7 @@ function saveCurrentTrip() {
       nights: state.nights,
       transport: state.transport,
       template: state.template,
+      destination: state.destination,
       itemNames,
       addedItemHistory: addedItemNames,
       usedCount: 1,
@@ -514,6 +697,16 @@ function saveCurrentTrip() {
   input.value = "";
   setSavedTrips(trips.sort((a, b) => b.usedCount - a.usedCount));
   showScreen("home");
+}
+
+function getTripSignature(trip) {
+  return [
+    trip.nights,
+    trip.transport || "train",
+    trip.template || "none",
+    trip.destination || "none",
+    (trip.itemNames || []).join("|"),
+  ].join(":");
 }
 
 document.addEventListener("click", (event) => {
@@ -569,6 +762,11 @@ document.addEventListener("change", (event) => {
     savePreferences();
   }
 
+  const destinationSelect = event.target.closest("#destinationSelect");
+  if (destinationSelect) {
+    state.destination = destinationSelect.value;
+  }
+
   const itemInput = event.target.closest("[data-item]");
   if (itemInput) {
     const item = state.items.find((entry) => entry.id === itemInput.dataset.item);
@@ -579,8 +777,13 @@ document.addEventListener("change", (event) => {
   }
 });
 
-document.querySelector("#buildListButton").addEventListener("click", () => {
-  buildItems();
+document.querySelector("#buildListButton").addEventListener("click", async () => {
+  const button = document.querySelector("#buildListButton");
+  button.disabled = true;
+  button.textContent = "天気を確認中";
+  await buildItemsWithWeather();
+  button.disabled = false;
+  button.textContent = "チェックリストへ";
   state.listBackTarget = "prefs";
   renderChecklist();
   showScreen("list");
