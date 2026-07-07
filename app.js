@@ -29,6 +29,8 @@ const companionItems = {
   contacts: [
     { name: "メガネ（夜用）", category: "洗面" },
     { name: "予備コンタクト", category: "洗面" },
+    { name: "コンタクトケース・洗浄液", category: "洗面" },
+    { name: "目薬", category: "洗面" },
   ],
   makeup: [
     { name: "メイク落とし", category: "洗面" },
@@ -38,6 +40,10 @@ const companionItems = {
   ],
   hairIron: [
     { name: "ヘアブラシ", category: "洗面" },
+    { name: "ヘアアイロン用ポーチ", category: "洗面" },
+  ],
+  medicine: [
+    { name: "お薬手帳", category: "その他" },
   ],
 };
 
@@ -288,6 +294,7 @@ function inferCategory(name) {
   if (
     name.includes("コンタクト") ||
     name.includes("メガネ") ||
+    name.includes("目薬") ||
     name.includes("メイク") ||
     name.includes("スキンケア") ||
     name.includes("洗顔") ||
@@ -296,7 +303,7 @@ function inferCategory(name) {
   ) {
     return "洗面";
   }
-  if (["充電器・ケーブル", "常備薬", "日焼け止め"].includes(name)) return "その他";
+  if (["充電器・ケーブル", "常備薬", "日焼け止め", "お薬手帳"].includes(name)) return "その他";
   return "追加";
 }
 
