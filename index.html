@@ -77,6 +77,7 @@
         </header>
 
         <div class="option-grid" id="nightOptions" role="radiogroup" aria-label="泊数">
+          <button class="option-card" type="button" data-nights="0">日帰り</button>
           <button class="option-card" type="button" data-nights="1">1泊</button>
           <button class="option-card" type="button" data-nights="2">2泊</button>
           <button class="option-card" type="button" data-nights="3">3泊</button>
@@ -96,6 +97,15 @@
           <button class="choice-pill" type="button" data-transport="plane">飛行機</button>
           <button class="choice-pill" type="button" data-transport="train">電車</button>
           <button class="choice-pill" type="button" data-transport="car">車</button>
+        </div>
+
+        <div class="template-group" id="templateOptions" role="radiogroup" aria-label="目的">
+          <button class="choice-pill" type="button" data-template="none">通常</button>
+          <button class="choice-pill" type="button" data-template="homecoming">実家</button>
+          <button class="choice-pill" type="button" data-template="business">出張</button>
+          <button class="choice-pill" type="button" data-template="camp">キャンプ</button>
+          <button class="choice-pill" type="button" data-template="disney">ディズニー</button>
+          <button class="choice-pill" type="button" data-template="pool">プール</button>
         </div>
 
         <div class="check-stack" id="preferenceList"></div>

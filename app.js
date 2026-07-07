@@ -12,6 +12,7 @@ const preferenceDefinitions = [
   { key: "skincare", label: "スキンケアを持っていく" },
   { key: "hairIron", label: "ヘアアイロンを使う" },
   { key: "medicine", label: "常備薬がある" },
+  { key: "kids", label: "子ども連れ" },
 ];
 
 const suggestionItems = [
@@ -54,6 +55,12 @@ const companionItems = {
     { name: "胃薬", category: "その他" },
     { name: "絆創膏", category: "その他" },
   ],
+  kids: [
+    { name: "子どもの着替え", category: "衣類" },
+    { name: "おやつ", category: "その他" },
+    { name: "ウェットティッシュ", category: "その他" },
+    { name: "母子手帳・保険証", category: "貴重品" },
+  ],
 };
 
 const transportDefinitions = {
@@ -62,9 +69,19 @@ const transportDefinitions = {
   car: { label: "車", items: ["運転免許証", "ETCカード"] },
 };
 
+const templateDefinitions = {
+  none: { label: "通常", items: [] },
+  homecoming: { label: "実家", items: ["手土産", "実家の鍵", "帰省先の充電器"] },
+  business: { label: "出張", items: ["名刺", "PC", "PC充電器", "会社用の身分証"] },
+  camp: { label: "キャンプ", items: ["虫よけ", "懐中電灯", "軍手", "レジャーシート"] },
+  disney: { label: "ディズニー", items: ["チケット", "モバイルバッテリー", "雨具", "待ち時間用の羽織"] },
+  pool: { label: "プール", items: ["水着", "ゴーグル", "ビーチサンダル", "濡れたもの用の袋"] },
+};
+
 const state = {
   nights: 1,
   transport: "train",
+  template: "none",
   preferences: loadPreferences(),
   items: [],
   removedSuggestions: [],
@@ -87,6 +104,7 @@ function loadPreferences() {
     skincare: false,
     hairIron: false,
     medicine: false,
+    kids: false,
   };
 }
 
@@ -124,15 +142,20 @@ function buildItems() {
     createItem("財布", "貴重品"),
     createItem("スマホ", "貴重品"),
     createItem("鍵", "貴重品"),
-    createItem(`トップス（${state.nights}日分）`, "衣類", state.nights),
-    createItem(`ボトムス（${state.nights}日分）`, "衣類", state.nights),
-    createItem(`下着（${state.nights}日分）`, "衣類", state.nights),
-    createItem(`靴下（${state.nights}日分）`, "衣類", state.nights),
     createItem("充電器・ケーブル", "その他"),
     createItem("日焼け止め", "その他"),
   ];
 
+  if (state.nights > 0) {
+    addChecklistItem(items, `トップス（${state.nights}日分）`, "衣類", state.nights);
+    addChecklistItem(items, `ボトムス（${state.nights}日分）`, "衣類", state.nights);
+    addChecklistItem(items, `パジャマ（${state.nights}泊分）`, "衣類", state.nights);
+    addChecklistItem(items, `下着（${state.nights}日分）`, "衣類", state.nights);
+    addChecklistItem(items, `靴下（${state.nights}日分）`, "衣類", state.nights);
+  }
+
   transportDefinitions[state.transport].items.forEach((name) => addChecklistItem(items, name, "その他"));
+  templateDefinitions[state.template].items.forEach((name) => addChecklistItem(items, name, inferCategory(name)));
 
   if (state.preferences.contacts) {
     addChecklistItem(items, `コンタクト（${state.nights}泊分）`, "洗面", state.nights);
@@ -169,6 +192,12 @@ function renderPreferences() {
     button.setAttribute("aria-checked", selected ? "true" : "false");
   });
 
+  document.querySelectorAll("[data-template]").forEach((button) => {
+    const selected = button.dataset.template === state.template;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-checked", selected ? "true" : "false");
+  });
+
   preferenceDefinitions.forEach((definition) => {
     const row = document.createElement("label");
     row.className = "check-row";
@@ -181,7 +210,10 @@ function renderPreferences() {
 }
 
 function renderChecklist() {
-  document.querySelector("#tripSummary").textContent = `${state.nights}泊 · ${getTransportLabel(state.transport)}の支度`;
+  const nightsLabel = state.nights === 0 ? "日帰り" : `${state.nights}泊`;
+  const templateLabel = getTemplateLabel(state.template);
+  const purpose = state.template === "none" ? "" : ` · ${templateLabel}`;
+  document.querySelector("#tripSummary").textContent = `${nightsLabel} · ${getTransportLabel(state.transport)}${purpose}の支度`;
 
   const target = document.querySelector("#checklist");
   target.innerHTML = "";
@@ -262,6 +294,10 @@ function getTransportLabel(key) {
   return transportDefinitions[key]?.label || "移動手段未設定";
 }
 
+function getTemplateLabel(key) {
+  return templateDefinitions[key]?.label || "通常";
+}
+
 function getItemHistory() {
   try {
     const history = JSON.parse(localStorage.getItem("rakujitaku_added_item_history"));
@@ -340,11 +376,14 @@ function renderSavedTrips() {
     const button = document.createElement("button");
     button.className = "saved-card";
     button.type = "button";
-    const title = trip.name || `${trip.nights}泊の支度`;
+    const nightsLabel = trip.nights === 0 ? "日帰り" : `${trip.nights}泊`;
+    const title = trip.name || `${nightsLabel}の支度`;
     const transportLabel = getTransportLabel(trip.transport || "train");
+    const templateLabel = getTemplateLabel(trip.template || "none");
+    const purpose = trip.template && trip.template !== "none" ? ` · ${templateLabel}` : "";
     button.innerHTML = `
       <strong>${title}</strong>
-      <span>${trip.nights}泊 · ${transportLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用</span>
+      <span>${nightsLabel} · ${transportLabel}${purpose} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用</span>
     `;
     button.addEventListener("click", () => {
       trip.usedCount += 1;
@@ -353,6 +392,7 @@ function renderSavedTrips() {
       setSavedTrips(sortedTrips);
       state.nights = trip.nights;
       state.transport = trip.transport || "train";
+      state.template = trip.template || "none";
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
       state.listBackTarget = "home";
       renderChecklist();
@@ -363,8 +403,61 @@ function renderSavedTrips() {
 }
 
 function inferCategory(name) {
-  if (["財布", "スマホ", "鍵"].includes(name)) return "貴重品";
-  if (name.includes("トップス") || name.includes("ボトムス") || name.includes("下着") || name.includes("靴下")) return "衣類";
+  const valuableItems = [
+    "財布",
+    "スマホ",
+    "鍵",
+    "実家の鍵",
+    "航空券・予約確認",
+    "身分証",
+    "乗車券・ICカード",
+    "運転免許証",
+    "ETCカード",
+    "名刺",
+    "会社用の身分証",
+    "母子手帳・保険証",
+  ];
+  const otherItems = [
+    "充電器・ケーブル",
+    "常備薬",
+    "日焼け止め",
+    "お薬手帳",
+    "痛み止め",
+    "胃薬",
+    "絆創膏",
+    "手土産",
+    "帰省先の充電器",
+    "PC",
+    "PC充電器",
+    "虫よけ",
+    "懐中電灯",
+    "軍手",
+    "レジャーシート",
+    "チケット",
+    "モバイルバッテリー",
+    "雨具",
+    "ゴーグル",
+    "ビーチサンダル",
+    "濡れたもの用の袋",
+    "おやつ",
+    "ウェットティッシュ",
+  ];
+
+  if (valuableItems.includes(name)) {
+    return "貴重品";
+  }
+  if (
+    name.includes("トップス") ||
+    name.includes("ボトムス") ||
+    name.includes("パジャマ") ||
+    name.includes("下着") ||
+    name.includes("靴下") ||
+    name.includes("着替え") ||
+    name.includes("水着") ||
+    name.includes("羽織")
+  ) {
+    return "衣類";
+  }
   if (
     name.includes("コンタクト") ||
     name.includes("メガネ") ||
@@ -383,7 +476,9 @@ function inferCategory(name) {
   ) {
     return "洗面";
   }
-  if (["充電器・ケーブル", "常備薬", "日焼け止め", "お薬手帳", "痛み止め", "胃薬", "絆創膏"].includes(name)) return "その他";
+  if (otherItems.includes(name)) {
+    return "その他";
+  }
   return "追加";
 }
 
@@ -400,12 +495,14 @@ function saveCurrentTrip() {
     trips[existingIndex].usedCount += 1;
     trips[existingIndex].name = name || trips[existingIndex].name || "";
     trips[existingIndex].transport = state.transport;
+    trips[existingIndex].template = state.template;
     trips[existingIndex].addedItemHistory = addedItemNames;
   } else {
     trips.unshift({
       name,
       nights: state.nights,
       transport: state.transport,
+      template: state.template,
       itemNames,
       addedItemHistory: addedItemNames,
       usedCount: 1,
@@ -435,6 +532,12 @@ document.addEventListener("click", (event) => {
   const transportButton = event.target.closest("[data-transport]");
   if (transportButton) {
     state.transport = transportButton.dataset.transport;
+    renderPreferences();
+  }
+
+  const templateButton = event.target.closest("[data-template]");
+  if (templateButton) {
+    state.template = templateButton.dataset.template;
     renderPreferences();
   }
 

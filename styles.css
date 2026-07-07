@@ -425,11 +425,19 @@ h2 {
   cursor: pointer;
 }
 
-.choice-group {
+.choice-group,
+.template-group {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 16px;
+}
+
+.choice-group {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.template-group {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .choice-pill {
@@ -633,7 +641,8 @@ h2 {
     grid-template-columns: 1fr;
   }
 
-  .choice-group {
+  .choice-group,
+  .template-group {
     grid-template-columns: 1fr;
   }
 }
