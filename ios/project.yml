@@ -16,6 +16,7 @@ targets:
         CFBundleDisplayName: らくじたく
         CFBundleShortVersionString: "1.0.0"
         CFBundleVersion: "1"
+        ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UILaunchScreen:
