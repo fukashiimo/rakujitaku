@@ -50,6 +50,7 @@ const state = {
   preferences: loadPreferences(),
   items: [],
   removedSuggestions: [],
+  listBackTarget: "prefs",
 };
 
 function loadPreferences() {
@@ -277,6 +278,7 @@ function renderSavedTrips() {
       setSavedTrips(sortedTrips);
       state.nights = trip.nights;
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
+      state.listBackTarget = "home";
       renderChecklist();
       showScreen("list");
     });
@@ -376,8 +378,13 @@ document.addEventListener("change", (event) => {
 
 document.querySelector("#buildListButton").addEventListener("click", () => {
   buildItems();
+  state.listBackTarget = "prefs";
   renderChecklist();
   showScreen("list");
+});
+
+document.querySelector("#listBackButton").addEventListener("click", () => {
+  showScreen(state.listBackTarget);
 });
 
 document.querySelector("#addForm").addEventListener("submit", (event) => {
