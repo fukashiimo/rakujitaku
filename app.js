@@ -121,7 +121,8 @@ const destinationDefinitions = [
 
 const state = {
   nights: 1,
-  destination: "none",
+  destinationKeys: [],
+  travelDate: getTodayDate(),
   customDestinations: loadCustomDestinations(),
   weatherSummary: null,
   weatherPreviews: {},
@@ -185,6 +186,41 @@ function saveCustomDestinations() {
 
 function normalizeDestinationLabel(label) {
   return String(label).replace(/\s+/g, " ").replace(/　+/g, " ").trim();
+}
+
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayDate() {
+  return formatLocalDate(new Date());
+}
+
+function addDays(date, days) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+}
+
+function getTomorrowDate() {
+  return formatLocalDate(addDays(new Date(), 1));
+}
+
+function normalizeDate(value) {
+  const text = String(value || "");
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : getTodayDate();
+}
+
+function getForecastDateLabel(date = state.travelDate) {
+  const normalizedDate = normalizeDate(date);
+  if (normalizedDate === getTodayDate()) return "今日";
+  if (normalizedDate === getTomorrowDate()) return "明日";
+
+  const [, month, day] = normalizedDate.split("-");
+  return `${Number(month)}/${Number(day)}`;
 }
 
 function hideMoreNightsForm() {
@@ -337,84 +373,108 @@ function buildItems() {
 
 async function applyWeatherItems(items) {
   state.weatherSummary = null;
-  const destination = getDestination(state.destination);
-  if (!destination?.areaCode) return;
+  const destinations = getSelectedDestinations().filter((destination) => destination.areaCode);
+  if (destinations.length === 0) return;
 
-  try {
-    const cachedSummary = state.weatherPreviews[destination.key];
-    const summary = cachedSummary && !cachedSummary.unavailable
-      ? cachedSummary
-      : summarizeForecast(await fetchForecast(destination.areaCode), destination);
-    summary.destinationKey = destination.key;
-    state.weatherPreviews[destination.key] = summary;
-    state.weatherSummary = summary;
+  const summaries = await Promise.all(destinations.map((destination) => getDestinationWeatherSummary(destination)));
+  const availableSummaries = summaries.filter((summary) => !summary.unavailable);
+  state.weatherSummary = {
+    date: state.travelDate,
+    summaries,
+    unavailable: availableSummaries.length === 0,
+    needsRainGear: availableSummaries.some((summary) => summary.needsRainGear),
+    needsHeatCare: availableSummaries.some((summary) => summary.needsHeatCare),
+    needsColdCare: availableSummaries.some((summary) => summary.needsColdCare),
+  };
 
-    if (summary.needsRainGear) {
-      addChecklistItem(items, "折りたたみ傘", "その他");
-      addChecklistItem(items, "雨具", "その他");
-    }
-    if (summary.needsHeatCare) {
-      addChecklistItem(items, "帽子", "衣類");
-      addChecklistItem(items, "汗拭きシート", "その他");
-      addChecklistItem(items, "飲み物", "その他");
-    }
-    if (summary.needsColdCare) {
-      addChecklistItem(items, "羽織", "衣類");
-      addChecklistItem(items, "カイロ", "その他");
-    }
-  } catch (error) {
-    state.weatherSummary = {
-      destination: destination.label,
-      unavailable: true,
-    };
+  if (state.weatherSummary.needsRainGear) {
+    addChecklistItem(items, "折りたたみ傘", "その他");
+    addChecklistItem(items, "雨具", "その他");
+  }
+  if (state.weatherSummary.needsHeatCare) {
+    addChecklistItem(items, "帽子", "衣類");
+    addChecklistItem(items, "汗拭きシート", "その他");
+    addChecklistItem(items, "飲み物", "その他");
+  }
+  if (state.weatherSummary.needsColdCare) {
+    addChecklistItem(items, "羽織", "衣類");
+    addChecklistItem(items, "カイロ", "その他");
   }
 }
 
 function preloadDestinationWeather() {
   getDestinations()
     .filter((destination) => destination.areaCode)
-    .forEach((destination) => queueDestinationWeatherPreview(destination));
+    .forEach((destination) => queueDestinationWeatherPreview(destination, state.travelDate));
   runWeatherPreviewQueue();
 }
 
-function queueDestinationWeatherPreview(destination) {
+function getWeatherPreviewKey(destinationKey, date = state.travelDate) {
+  return `${destinationKey}:${normalizeDate(date)}`;
+}
+
+function getWeatherPreview(destination, date = state.travelDate) {
+  return state.weatherPreviews[getWeatherPreviewKey(destination.key, date)];
+}
+
+function setWeatherPreview(destination, date, summary) {
+  state.weatherPreviews[getWeatherPreviewKey(destination.key, date)] = summary;
+}
+
+function queueDestinationWeatherPreview(destination, date = state.travelDate) {
+  const cacheKey = getWeatherPreviewKey(destination.key, date);
   if (
-    state.weatherPreviews[destination.key] ||
-    weatherPreviewRequestKeys.has(destination.key)
+    state.weatherPreviews[cacheKey] ||
+    weatherPreviewRequestKeys.has(cacheKey)
   ) {
     return;
   }
 
-  weatherPreviewRequestKeys.add(destination.key);
-  weatherPreviewQueue.push(destination);
+  weatherPreviewRequestKeys.add(cacheKey);
+  weatherPreviewQueue.push({ destination, date: normalizeDate(date), cacheKey });
 }
 
 function runWeatherPreviewQueue() {
   while (weatherPreviewActiveCount < weatherPreviewConcurrency && weatherPreviewQueue.length > 0) {
-    const destination = weatherPreviewQueue.shift();
+    const request = weatherPreviewQueue.shift();
     weatherPreviewActiveCount += 1;
-    fetchDestinationWeatherPreview(destination).finally(() => {
+    fetchDestinationWeatherPreview(request).finally(() => {
       weatherPreviewActiveCount -= 1;
       runWeatherPreviewQueue();
     });
   }
 }
 
-async function fetchDestinationWeatherPreview(destination) {
+async function getDestinationWeatherSummary(destination, date = state.travelDate) {
+  const cachedSummary = getWeatherPreview(destination, date);
+  if (cachedSummary && !cachedSummary.unavailable) return cachedSummary;
+
   try {
     const forecast = await fetchForecast(destination.areaCode);
-    const summary = summarizeForecast(forecast, destination);
+    const summary = summarizeForecast(forecast, destination, date);
     summary.destinationKey = destination.key;
-    state.weatherPreviews[destination.key] = summary;
+    setWeatherPreview(destination, date, summary);
+    return summary;
   } catch (error) {
-    state.weatherPreviews[destination.key] = {
+    const summary = {
       destination: destination.label,
       destinationKey: destination.key,
+      forecastDate: normalizeDate(date),
       unavailable: true,
     };
+    setWeatherPreview(destination, date, summary);
+    return summary;
+  }
+}
+
+async function fetchDestinationWeatherPreview(request) {
+  const { destination, date, cacheKey } = request;
+  try {
+    await getDestinationWeatherSummary(destination, date);
   } finally {
-    weatherPreviewRequestKeys.delete(destination.key);
+    weatherPreviewRequestKeys.delete(cacheKey);
     renderDestinationOptions();
+    renderSelectedDestinations();
     renderDestinationWeatherInfo();
   }
 }
@@ -440,22 +500,46 @@ async function fetchForecast(areaCode) {
   }
 }
 
-function summarizeForecast(forecast, destination) {
+function getDateKey(value) {
+  return String(value || "").slice(0, 10);
+}
+
+function collectForecastValues(timeSeries, area, propName, targetDate) {
+  const timeDefines = timeSeries?.timeDefines || [];
+  const values = area?.[propName] || [];
+  return timeDefines
+    .map((time, index) => (getDateKey(time) === targetDate ? values[index] : null))
+    .filter((value) => value !== null && value !== "");
+}
+
+function summarizeForecast(forecast, destination, date = state.travelDate) {
+  const targetDate = normalizeDate(date);
   const today = forecast[0];
   const weekly = forecast[1];
-  const weatherArea = today?.timeSeries?.[0]?.areas?.[0];
-  const popArea = today?.timeSeries?.[1]?.areas?.[0];
-  const tempArea = today?.timeSeries?.[2]?.areas?.[0];
-  const weeklyTempArea = weekly?.timeSeries?.[1]?.areas?.[0];
-  const weathers = (weatherArea?.weathers || []).join(" ");
-  const pops = (popArea?.pops || weekly?.timeSeries?.[0]?.areas?.[0]?.pops || [])
+  const weatherSeries = today?.timeSeries?.[0];
+  const popSeries = today?.timeSeries?.[1];
+  const tempSeries = today?.timeSeries?.[2];
+  const weeklyPopSeries = weekly?.timeSeries?.[0];
+  const weeklyTempSeries = weekly?.timeSeries?.[1];
+  const weatherArea = weatherSeries?.areas?.[0];
+  const popArea = popSeries?.areas?.[0];
+  const tempArea = tempSeries?.areas?.[0];
+  const weeklyPopArea = weeklyPopSeries?.areas?.[0];
+  const weeklyTempArea = weeklyTempSeries?.areas?.[0];
+  const weathers = collectForecastValues(weatherSeries, weatherArea, "weathers", targetDate)
+    .filter((value, index, array) => array.indexOf(value) === index)
+    .join(" ");
+  const pops = [
+    ...collectForecastValues(popSeries, popArea, "pops", targetDate),
+    ...collectForecastValues(weeklyPopSeries, weeklyPopArea, "pops", targetDate),
+  ]
     .filter((value) => value !== "")
     .map((value) => Number(value))
     .filter((value) => Number.isFinite(value));
   const temps = [
-    ...(tempArea?.temps || []),
-    ...(weeklyTempArea?.tempsMin || []),
-    ...(weeklyTempArea?.tempsMax || []),
+    ...collectForecastValues(tempSeries, tempArea, "temps", targetDate),
+    ...collectForecastValues(weeklyTempSeries, weeklyTempArea, "tempsMin", targetDate),
+    ...collectForecastValues(weeklyTempSeries, weeklyTempArea, "tempsMax", targetDate),
   ]
     .filter((value) => value !== "")
     .map((value) => Number(value))
@@ -468,6 +552,8 @@ function summarizeForecast(forecast, destination) {
   return {
     destination: destination.label,
     destinationKey: destination.key,
+    forecastDate: targetDate,
+    unavailable: !weathers && maxPop === null && minTemp === null && maxTemp === null,
     weatherText: weathers,
     maxPop,
     minTemp,
@@ -483,12 +569,12 @@ function getDestinationOptionLabel(destination) {
     return destination.label;
   }
 
-  const summary = state.weatherPreviews[destination.key];
+  const summary = getWeatherPreview(destination);
   if (!summary) {
     return `${destination.label}（⏳確認中）`;
   }
   if (summary.unavailable) {
-    return `${destination.label}（⚠️天気取得なし）`;
+    return `${destination.label}（⚠️予報なし）`;
   }
 
   return `${destination.label}（${formatWeatherSummary(summary)}）`;
@@ -538,32 +624,28 @@ function renderDestinationWeatherInfo(message = null) {
     return;
   }
 
-  const destination = getDestination(state.destination);
-  if (!destination.areaCode) {
-    target.textContent = destination.key === "none"
-      ? "行き先一覧に天気と気温を表示します。"
-      : "追加した行き先は天気取得なし。チェックリストは通常通り作れます。";
+  const destinations = getSelectedDestinations();
+  if (destinations.length === 0) {
+    target.textContent = "行き先一覧に天気と気温を表示します。";
     return;
   }
 
-  const summary = state.weatherPreviews[destination.key];
-  if (!summary) {
-    target.textContent = "⏳天気と気温を確認中";
-    return;
-  }
-
-  if (summary.unavailable) {
-    target.textContent = `${destination.label}の天気を取得できませんでした。チェックリストは通常通り作れます。`;
-    return;
-  }
-
-  target.textContent = `${destination.label}: ${formatWeatherSummary(summary)}`;
+  target.textContent = destinations
+    .map((destination) => {
+      if (!destination.areaCode) return `${destination.label}: 天気取得なし`;
+      const summary = getWeatherPreview(destination);
+      if (!summary) return `${destination.label}: ⏳確認中`;
+      if (summary.unavailable) return `${destination.label}: ⚠️予報なし`;
+      return `${destination.label}: ${formatWeatherSummary(summary)}`;
+    })
+    .join(" ／ ");
 }
 
 function updateDestinationWeatherPreview() {
-  const destination = getDestination(state.destination);
-  if (!destination.areaCode) {
+  const destination = getSelectedDestinations().find((entry) => entry.areaCode && !getWeatherPreview(entry));
+  if (!destination) {
     renderDestinationOptions();
+    renderSelectedDestinations();
     renderDestinationWeatherInfo();
     return;
   }
@@ -571,6 +653,7 @@ function updateDestinationWeatherPreview() {
   queueDestinationWeatherPreview(destination);
   runWeatherPreviewQueue();
   renderDestinationOptions();
+  renderSelectedDestinations();
   renderDestinationWeatherInfo();
 }
 
@@ -578,24 +661,81 @@ function renderDestinationOptions() {
   const destinationSelect = document.querySelector("#destinationSelect");
   if (!destinationSelect) return;
 
-  const currentValue = getDestination(state.destination).key;
   destinationSelect.innerHTML = "";
   getDestinations().forEach((destination) => {
     const option = document.createElement("option");
     option.value = destination.key;
     option.textContent = getDestinationOptionLabel(destination);
+    option.disabled = destination.key !== "none" && state.destinationKeys.includes(destination.key);
     destinationSelect.append(option);
   });
-  state.destination = currentValue;
-  destinationSelect.value = state.destination;
+  destinationSelect.value = "none";
+}
+
+function renderSelectedDestinations() {
+  const target = document.querySelector("#selectedDestinations");
+  if (!target) return;
+
+  target.innerHTML = "";
+  const destinations = getSelectedDestinations();
+  if (destinations.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "destination-empty";
+    empty.textContent = "未設定";
+    target.append(empty);
+    return;
+  }
+
+  destinations.forEach((destination) => {
+    const chip = document.createElement("span");
+    chip.className = "destination-chip";
+    const summary = destination.areaCode ? getWeatherPreview(destination) : null;
+    const label = document.createElement("span");
+    label.textContent = destination.areaCode && summary && !summary.unavailable
+      ? `${destination.label} ${formatWeatherSummary(summary)}`
+      : destination.label;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("aria-label", `${destination.label}を外す`);
+    button.dataset.removeDestination = destination.key;
+    button.textContent = "×";
+    chip.append(label, button);
+    target.append(chip);
+  });
+}
+
+function renderDateControls() {
+  const input = document.querySelector("#travelDate");
+  if (input) {
+    const today = new Date();
+    input.min = getTodayDate();
+    input.max = formatLocalDate(addDays(today, 7));
+    input.value = state.travelDate;
+  }
+
+  document.querySelectorAll("[data-date-preset]").forEach((button) => {
+    const presetDate = button.dataset.datePreset === "tomorrow" ? getTomorrowDate() : getTodayDate();
+    button.classList.toggle("is-selected", state.travelDate === presetDate);
+  });
+}
+
+function setTravelDate(value) {
+  state.travelDate = normalizeDate(value);
+  renderDateControls();
+  preloadDestinationWeather();
+  renderDestinationOptions();
+  renderSelectedDestinations();
+  renderDestinationWeatherInfo();
 }
 
 function renderPreferences() {
   const target = document.querySelector("#preferenceList");
   target.innerHTML = "";
 
+  renderDateControls();
   preloadDestinationWeather();
   renderDestinationOptions();
+  renderSelectedDestinations();
   renderDestinationWeatherInfo();
 
   preferenceDefinitions.forEach((definition) => {
@@ -611,11 +751,12 @@ function renderPreferences() {
 
 function renderChecklist() {
   const nightsLabel = state.nights === 0 ? "日帰り" : `${state.nights}泊`;
-  const destination = getDestination(state.destination);
-  const destinationLabel = destination.key !== "none" ? ` · ${destination.label}` : "";
+  const dateLabel = ` · ${getForecastDateLabel()}`;
+  const destinationName = getDestinationListLabel();
+  const destinationLabel = destinationName ? ` · ${destinationName}` : "";
   const weatherLabel = getWeatherSummaryLabel();
   document.querySelector("#tripSummary").textContent =
-    `${nightsLabel}${destinationLabel}${weatherLabel}の支度`;
+    `${nightsLabel}${dateLabel}${destinationLabel}${weatherLabel}の支度`;
 
   const target = document.querySelector("#checklist");
   target.innerHTML = "";
@@ -700,6 +841,48 @@ function getDestination(key) {
   return getDestinations().find((destination) => destination.key === key) || destinationDefinitions[0];
 }
 
+function normalizeDestinationKeys(keys) {
+  const inputKeys = Array.isArray(keys) ? keys : [keys];
+  const destinationKeys = inputKeys
+    .filter((key) => key && key !== "none")
+    .filter((key) => getDestination(key).key !== "none");
+  return destinationKeys.filter((key, index, array) => array.indexOf(key) === index);
+}
+
+function getTripDestinationKeys(trip) {
+  return normalizeDestinationKeys(trip.destinationKeys || trip.destinations || trip.destination || []);
+}
+
+function getSelectedDestinations() {
+  return normalizeDestinationKeys(state.destinationKeys).map((key) => getDestination(key));
+}
+
+function getDestinationListLabel(keys = state.destinationKeys) {
+  const labels = normalizeDestinationKeys(keys).map((key) => getDestination(key).label);
+  if (labels.length === 0) return "";
+  if (labels.length <= 3) return labels.join("・");
+  return `${labels.slice(0, 3).join("・")}ほか${labels.length - 3}件`;
+}
+
+function addDestinationKey(key) {
+  if (key === "none") {
+    state.destinationKeys = [];
+  } else {
+    state.destinationKeys = normalizeDestinationKeys(state.destinationKeys.concat(key));
+  }
+
+  renderDestinationOptions();
+  renderSelectedDestinations();
+  renderDestinationWeatherInfo();
+}
+
+function removeDestinationKey(key) {
+  state.destinationKeys = normalizeDestinationKeys(state.destinationKeys.filter((destinationKey) => destinationKey !== key));
+  renderDestinationOptions();
+  renderSelectedDestinations();
+  renderDestinationWeatherInfo();
+}
+
 function addCustomDestination(label) {
   const cleanLabel = normalizeDestinationLabel(label);
   if (!cleanLabel) return;
@@ -709,7 +892,7 @@ function addCustomDestination(label) {
   );
 
   if (existing) {
-    state.destination = existing.key;
+    addDestinationKey(existing.key);
   } else {
     const destination = {
       key: `custom:${crypto.randomUUID()}`,
@@ -719,16 +902,15 @@ function addCustomDestination(label) {
     };
     state.customDestinations.unshift(destination);
     saveCustomDestinations();
-    state.destination = destination.key;
+    addDestinationKey(destination.key);
   }
 
-  renderPreferences();
   hideDestinationForm();
 }
 
 function getWeatherSummaryLabel() {
   if (!state.weatherSummary) return "";
-  if (state.weatherSummary.unavailable) return " · 天気取得なし";
+  if (state.weatherSummary.unavailable) return " · 予報なし";
 
   const labels = [];
   if (state.weatherSummary.needsRainGear) labels.push("雨対策");
@@ -816,13 +998,14 @@ function renderSavedTrips() {
     button.className = "saved-card";
     button.type = "button";
     const nightsLabel = trip.nights === 0 ? "日帰り" : `${trip.nights}泊`;
+    const dateLabel = getForecastDateLabel(trip.travelDate || getTodayDate());
     const title = trip.name || `${nightsLabel}の支度`;
-    const destination = getDestination(trip.destination || "none");
-    const destinationLabel = destination.key !== "none" ? ` · ${destination.label}` : "";
+    const destinationName = getDestinationListLabel(getTripDestinationKeys(trip));
+    const destinationLabel = destinationName ? ` · ${destinationName}` : "";
     const titleText = document.createElement("strong");
     titleText.textContent = title;
     const detailText = document.createElement("span");
-    detailText.textContent = `${nightsLabel}${destinationLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用`;
+    detailText.textContent = `${nightsLabel} · ${dateLabel}${destinationLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用`;
     button.append(titleText, detailText);
     button.addEventListener("click", () => {
       trip.usedCount += 1;
@@ -830,7 +1013,8 @@ function renderSavedTrips() {
       const sortedTrips = [trip, ...trips].sort((a, b) => b.usedCount - a.usedCount);
       setSavedTrips(sortedTrips);
       state.nights = trip.nights;
-      state.destination = trip.destination || "none";
+      state.destinationKeys = getTripDestinationKeys(trip);
+      state.travelDate = normalizeDate(trip.travelDate || getTodayDate());
       state.weatherSummary = null;
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
       state.listBackTarget = "home";
@@ -921,7 +1105,8 @@ function saveCurrentTrip() {
   const name = input.value.trim();
   const signature = getTripSignature({
     nights: state.nights,
-    destination: state.destination,
+    destinationKeys: state.destinationKeys,
+    travelDate: state.travelDate,
     itemNames,
   });
   const existingIndex = trips.findIndex((trip) => getTripSignature(trip) === signature);
@@ -929,13 +1114,17 @@ function saveCurrentTrip() {
   if (existingIndex >= 0) {
     trips[existingIndex].usedCount += 1;
     trips[existingIndex].name = name || trips[existingIndex].name || "";
-    trips[existingIndex].destination = state.destination;
+    trips[existingIndex].destination = state.destinationKeys[0] || "none";
+    trips[existingIndex].destinationKeys = state.destinationKeys;
+    trips[existingIndex].travelDate = state.travelDate;
     trips[existingIndex].addedItemHistory = addedItemNames;
   } else {
     trips.unshift({
       name,
       nights: state.nights,
-      destination: state.destination,
+      destination: state.destinationKeys[0] || "none",
+      destinationKeys: state.destinationKeys,
+      travelDate: state.travelDate,
       itemNames,
       addedItemHistory: addedItemNames,
       usedCount: 1,
@@ -952,7 +1141,8 @@ function saveCurrentTrip() {
 function getTripSignature(trip) {
   return [
     trip.nights,
-    trip.destination || "none",
+    normalizeDate(trip.travelDate || getTodayDate()),
+    getTripDestinationKeys(trip).join(",") || "none",
     (trip.itemNames || []).join("|"),
   ].join(":");
 }
@@ -976,6 +1166,17 @@ document.addEventListener("click", (event) => {
   const addDestinationButton = event.target.closest("#addDestinationButton");
   if (addDestinationButton) {
     toggleDestinationForm();
+  }
+
+  const removeDestinationButton = event.target.closest("[data-remove-destination]");
+  if (removeDestinationButton) {
+    removeDestinationKey(removeDestinationButton.dataset.removeDestination);
+    return;
+  }
+
+  const datePresetButton = event.target.closest("[data-date-preset]");
+  if (datePresetButton) {
+    setTravelDate(datePresetButton.dataset.datePreset === "tomorrow" ? getTomorrowDate() : getTodayDate());
   }
 
   const deleteButton = event.target.closest("[data-delete]");
@@ -1008,8 +1209,13 @@ document.addEventListener("change", (event) => {
 
   const destinationSelect = event.target.closest("#destinationSelect");
   if (destinationSelect) {
-    state.destination = destinationSelect.value;
+    addDestinationKey(destinationSelect.value);
     updateDestinationWeatherPreview();
+  }
+
+  const travelDateInput = event.target.closest("#travelDate");
+  if (travelDateInput) {
+    setTravelDate(travelDateInput.value);
   }
 
   const itemInput = event.target.closest("[data-item]");

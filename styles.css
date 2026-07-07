@@ -303,6 +303,7 @@ h2 {
 .back-button,
 .option-card,
 .destination-add-button,
+.date-preset-button,
 .add-row button,
 .destination-row button,
 .suggestion-button {
@@ -608,7 +609,8 @@ h2 {
   font-weight: 700;
 }
 
-.destination-field {
+.destination-field,
+.date-field {
   display: grid;
   gap: 8px;
   margin-bottom: 16px;
@@ -626,6 +628,36 @@ h2 {
   color: var(--muted);
 }
 
+.selected-destinations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.destination-chip,
+.destination-empty {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.destination-chip button {
+  min-width: 24px;
+  min-height: 24px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--soft);
+  cursor: pointer;
+}
+
 .destination-add-button {
   border-radius: var(--radius);
   color: var(--text);
@@ -634,8 +666,31 @@ h2 {
   font-weight: 700;
 }
 
+.date-control {
+  display: grid;
+  grid-template-columns: 74px 74px 1fr;
+  gap: 10px;
+}
+
+.date-label {
+  color: var(--muted);
+}
+
+.date-preset-button {
+  background: #242424;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.date-preset-button.is-selected {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: var(--text);
+}
+
 .save-name-field input,
-.destination-control select {
+.destination-control select,
+.date-control input {
   width: 100%;
   min-height: 48px;
   padding: 0 14px;
@@ -668,6 +723,14 @@ h2 {
 
   .option-grid {
     grid-template-columns: 1fr;
+  }
+
+  .date-control {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .date-control input {
+    grid-column: 1 / -1;
   }
 
 }

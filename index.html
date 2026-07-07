@@ -106,6 +106,7 @@
             <select id="destinationSelect" name="destination"></select>
             <button class="destination-add-button" type="button" id="addDestinationButton" aria-label="行き先を追加" aria-controls="destinationForm" aria-expanded="false">＋</button>
           </div>
+          <div class="selected-destinations" id="selectedDestinations"></div>
           <span class="weather-info" id="destinationWeatherInfo">行き先を選ぶと天気と気温を確認します。</span>
           <form class="destination-form" id="destinationForm" hidden>
             <label for="destinationName">行き先を追加</label>
@@ -114,6 +115,15 @@
               <button type="submit">追加</button>
             </div>
           </form>
+        </div>
+
+        <div class="date-field">
+          <label class="date-label" for="travelDate">日付</label>
+          <div class="date-control">
+            <button class="date-preset-button" type="button" data-date-preset="today">今日</button>
+            <button class="date-preset-button" type="button" data-date-preset="tomorrow">明日</button>
+            <input id="travelDate" name="travelDate" type="date" />
+          </div>
         </div>
 
         <div class="check-stack" id="preferenceList"></div>
