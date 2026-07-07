@@ -1,0 +1,49 @@
+name: Rakujitaku
+options:
+  bundleIdPrefix: com.shuyafukai
+  createIntermediateGroups: true
+
+targets:
+  Rakujitaku:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Rakujitaku
+    info:
+      path: Rakujitaku/Info.plist
+      properties:
+        CFBundleDisplayName: らくじたく
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UILaunchScreen:
+          UIColorName: ""
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shuyafukai.rakujitaku
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5"
+        DEVELOPMENT_TEAM: B54UXU8NGQ
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  RakujitakuUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: RakujitakuUITests
+    dependencies:
+      - target: Rakujitaku
+    info:
+      path: RakujitakuUITests/Info.plist
+      properties:
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shuyafukai.rakujitakuuitests
+        SWIFT_VERSION: "5"
