@@ -56,8 +56,15 @@ const companionItems = {
   ],
 };
 
+const transportDefinitions = {
+  plane: { label: "飛行機", items: ["航空券・予約確認", "身分証"] },
+  train: { label: "電車", items: ["乗車券・ICカード"] },
+  car: { label: "車", items: ["運転免許証", "ETCカード"] },
+};
+
 const state = {
   nights: 1,
+  transport: "train",
   preferences: loadPreferences(),
   items: [],
   removedSuggestions: [],
@@ -118,11 +125,14 @@ function buildItems() {
     createItem("スマホ", "貴重品"),
     createItem("鍵", "貴重品"),
     createItem(`トップス（${state.nights}日分）`, "衣類", state.nights),
+    createItem(`ボトムス（${state.nights}日分）`, "衣類", state.nights),
     createItem(`下着（${state.nights}日分）`, "衣類", state.nights),
     createItem(`靴下（${state.nights}日分）`, "衣類", state.nights),
     createItem("充電器・ケーブル", "その他"),
     createItem("日焼け止め", "その他"),
   ];
+
+  transportDefinitions[state.transport].items.forEach((name) => addChecklistItem(items, name, "その他"));
 
   if (state.preferences.contacts) {
     addChecklistItem(items, `コンタクト（${state.nights}泊分）`, "洗面", state.nights);
@@ -153,6 +163,12 @@ function renderPreferences() {
   const target = document.querySelector("#preferenceList");
   target.innerHTML = "";
 
+  document.querySelectorAll("[data-transport]").forEach((button) => {
+    const selected = button.dataset.transport === state.transport;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-checked", selected ? "true" : "false");
+  });
+
   preferenceDefinitions.forEach((definition) => {
     const row = document.createElement("label");
     row.className = "check-row";
@@ -165,7 +181,7 @@ function renderPreferences() {
 }
 
 function renderChecklist() {
-  document.querySelector("#tripSummary").textContent = `${state.nights}泊の支度`;
+  document.querySelector("#tripSummary").textContent = `${state.nights}泊 · ${getTransportLabel(state.transport)}の支度`;
 
   const target = document.querySelector("#checklist");
   target.innerHTML = "";
@@ -195,6 +211,7 @@ function renderChecklist() {
 
   renderProgress();
   renderSuggestions();
+  renderItemHistory();
 }
 
 function renderProgress() {
@@ -241,6 +258,51 @@ function addItem(name) {
   renderChecklist();
 }
 
+function getTransportLabel(key) {
+  return transportDefinitions[key]?.label || "移動手段未設定";
+}
+
+function getItemHistory() {
+  try {
+    const history = JSON.parse(localStorage.getItem("rakujitaku_added_item_history"));
+    return Array.isArray(history) ? history : [];
+  } catch (error) {
+    localStorage.removeItem("rakujitaku_added_item_history");
+    return [];
+  }
+}
+
+function setItemHistory(history) {
+  localStorage.setItem("rakujitaku_added_item_history", JSON.stringify(history.slice(0, 20)));
+}
+
+function rememberAddedItems(names) {
+  const current = getItemHistory();
+  const merged = names.concat(current).map(normalizeItemName).filter(Boolean);
+  setItemHistory(merged.filter((name, index, array) => array.indexOf(name) === index));
+}
+
+function renderItemHistory() {
+  const target = document.querySelector("#itemHistory");
+  target.innerHTML = "";
+  const existing = state.items.map((item) => normalizeItemName(item.name));
+  const history = getItemHistory().filter((name) => !existing.includes(normalizeItemName(name)));
+
+  if (history.length === 0) {
+    target.innerHTML = '<div class="empty-state">保存後に追加履歴が表示されます。</div>';
+    return;
+  }
+
+  history.forEach((name) => {
+    const button = document.createElement("button");
+    button.className = "suggestion-button";
+    button.type = "button";
+    button.textContent = `＋ ${name}`;
+    button.addEventListener("click", () => addItem(name));
+    target.append(button);
+  });
+}
+
 function toggleItem(itemId) {
   const item = state.items.find((entry) => entry.id === itemId);
   if (!item) return;
@@ -278,9 +340,11 @@ function renderSavedTrips() {
     const button = document.createElement("button");
     button.className = "saved-card";
     button.type = "button";
+    const title = trip.name || `${trip.nights}泊の支度`;
+    const transportLabel = getTransportLabel(trip.transport || "train");
     button.innerHTML = `
-      <strong>${trip.nights}泊の支度</strong>
-      <span>${trip.itemNames.length}個の持ち物 · ${trip.usedCount}回使用</span>
+      <strong>${title}</strong>
+      <span>${trip.nights}泊 · ${transportLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用</span>
     `;
     button.addEventListener("click", () => {
       trip.usedCount += 1;
@@ -288,6 +352,7 @@ function renderSavedTrips() {
       const sortedTrips = [trip, ...trips].sort((a, b) => b.usedCount - a.usedCount);
       setSavedTrips(sortedTrips);
       state.nights = trip.nights;
+      state.transport = trip.transport || "train";
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
       state.listBackTarget = "home";
       renderChecklist();
@@ -299,7 +364,7 @@ function renderSavedTrips() {
 
 function inferCategory(name) {
   if (["財布", "スマホ", "鍵"].includes(name)) return "貴重品";
-  if (name.includes("トップス") || name.includes("下着") || name.includes("靴下")) return "衣類";
+  if (name.includes("トップス") || name.includes("ボトムス") || name.includes("下着") || name.includes("靴下")) return "衣類";
   if (
     name.includes("コンタクト") ||
     name.includes("メガネ") ||
@@ -325,20 +390,31 @@ function inferCategory(name) {
 function saveCurrentTrip() {
   const trips = getSavedTrips();
   const itemNames = state.items.map((item) => item.name);
+  const addedItemNames = state.items.filter((item) => item.category === "追加").map((item) => item.name);
+  const input = document.querySelector("#tripName");
+  const name = input.value.trim();
   const signature = `${state.nights}:${itemNames.join("|")}`;
   const existingIndex = trips.findIndex((trip) => `${trip.nights}:${trip.itemNames.join("|")}` === signature);
 
   if (existingIndex >= 0) {
     trips[existingIndex].usedCount += 1;
+    trips[existingIndex].name = name || trips[existingIndex].name || "";
+    trips[existingIndex].transport = state.transport;
+    trips[existingIndex].addedItemHistory = addedItemNames;
   } else {
     trips.unshift({
+      name,
       nights: state.nights,
+      transport: state.transport,
       itemNames,
+      addedItemHistory: addedItemNames,
       usedCount: 1,
       savedAt: new Date().toISOString(),
     });
   }
 
+  rememberAddedItems(addedItemNames);
+  input.value = "";
   setSavedTrips(trips.sort((a, b) => b.usedCount - a.usedCount));
   showScreen("home");
 }
@@ -354,6 +430,12 @@ document.addEventListener("click", (event) => {
     state.nights = Number(nightButton.dataset.nights);
     renderPreferences();
     showScreen("prefs");
+  }
+
+  const transportButton = event.target.closest("[data-transport]");
+  if (transportButton) {
+    state.transport = transportButton.dataset.transport;
+    renderPreferences();
   }
 
   const deleteButton = event.target.closest("[data-delete]");
