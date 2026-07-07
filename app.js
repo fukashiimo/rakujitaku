@@ -124,13 +124,17 @@ const state = {
   destination: "none",
   customDestinations: loadCustomDestinations(),
   weatherSummary: null,
-  weatherPreview: null,
-  weatherPreviewRequestId: 0,
+  weatherPreviews: {},
   preferences: loadPreferences(),
   items: [],
   removedSuggestions: [],
   listBackTarget: "prefs",
 };
+
+const weatherPreviewQueue = [];
+const weatherPreviewRequestKeys = new Set();
+const weatherPreviewConcurrency = 4;
+let weatherPreviewActiveCount = 0;
 
 function loadPreferences() {
   try {
@@ -337,9 +341,12 @@ async function applyWeatherItems(items) {
   if (!destination?.areaCode) return;
 
   try {
-    const forecast = await fetchForecast(destination.areaCode);
-    const summary = summarizeForecast(forecast, destination);
+    const cachedSummary = state.weatherPreviews[destination.key];
+    const summary = cachedSummary && !cachedSummary.unavailable
+      ? cachedSummary
+      : summarizeForecast(await fetchForecast(destination.areaCode), destination);
     summary.destinationKey = destination.key;
+    state.weatherPreviews[destination.key] = summary;
     state.weatherSummary = summary;
 
     if (summary.needsRainGear) {
@@ -360,6 +367,55 @@ async function applyWeatherItems(items) {
       destination: destination.label,
       unavailable: true,
     };
+  }
+}
+
+function preloadDestinationWeather() {
+  getDestinations()
+    .filter((destination) => destination.areaCode)
+    .forEach((destination) => queueDestinationWeatherPreview(destination));
+  runWeatherPreviewQueue();
+}
+
+function queueDestinationWeatherPreview(destination) {
+  if (
+    state.weatherPreviews[destination.key] ||
+    weatherPreviewRequestKeys.has(destination.key)
+  ) {
+    return;
+  }
+
+  weatherPreviewRequestKeys.add(destination.key);
+  weatherPreviewQueue.push(destination);
+}
+
+function runWeatherPreviewQueue() {
+  while (weatherPreviewActiveCount < weatherPreviewConcurrency && weatherPreviewQueue.length > 0) {
+    const destination = weatherPreviewQueue.shift();
+    weatherPreviewActiveCount += 1;
+    fetchDestinationWeatherPreview(destination).finally(() => {
+      weatherPreviewActiveCount -= 1;
+      runWeatherPreviewQueue();
+    });
+  }
+}
+
+async function fetchDestinationWeatherPreview(destination) {
+  try {
+    const forecast = await fetchForecast(destination.areaCode);
+    const summary = summarizeForecast(forecast, destination);
+    summary.destinationKey = destination.key;
+    state.weatherPreviews[destination.key] = summary;
+  } catch (error) {
+    state.weatherPreviews[destination.key] = {
+      destination: destination.label,
+      destinationKey: destination.key,
+      unavailable: true,
+    };
+  } finally {
+    weatherPreviewRequestKeys.delete(destination.key);
+    renderDestinationOptions();
+    renderDestinationWeatherInfo();
   }
 }
 
@@ -423,34 +479,54 @@ function summarizeForecast(forecast, destination) {
 }
 
 function getDestinationOptionLabel(destination) {
-  if (state.weatherPreview?.destinationKey !== destination.key || state.weatherPreview.unavailable) {
+  if (!destination.areaCode) {
     return destination.label;
   }
-  return `${destination.label}（${formatWeatherSummary(state.weatherPreview)}）`;
+
+  const summary = state.weatherPreviews[destination.key];
+  if (!summary) {
+    return `${destination.label}（⏳確認中）`;
+  }
+  if (summary.unavailable) {
+    return `${destination.label}（⚠️天気取得なし）`;
+  }
+
+  return `${destination.label}（${formatWeatherSummary(summary)}）`;
 }
 
 function formatWeatherSummary(summary) {
   const parts = [];
   const weatherText = normalizeWeatherText(summary.weatherText);
-  if (weatherText) parts.push(weatherText);
+  const weatherEmoji = getWeatherEmoji(weatherText || summary.weatherText);
+  if (weatherText) parts.push(`${weatherEmoji}${weatherText}`);
 
   if (summary.minTemp !== null && summary.maxTemp !== null) {
-    parts.push(summary.minTemp === summary.maxTemp ? `${summary.maxTemp}℃` : `${summary.minTemp}-${summary.maxTemp}℃`);
+    parts.push(summary.minTemp === summary.maxTemp ? `🌡️${summary.maxTemp}℃` : `🌡️${summary.minTemp}-${summary.maxTemp}℃`);
   } else if (summary.maxTemp !== null) {
-    parts.push(`最高${summary.maxTemp}℃`);
+    parts.push(`🌡️最高${summary.maxTemp}℃`);
   } else if (summary.minTemp !== null) {
-    parts.push(`最低${summary.minTemp}℃`);
+    parts.push(`🌡️最低${summary.minTemp}℃`);
   }
 
   if (summary.maxPop !== null) {
-    parts.push(`降水${summary.maxPop}%`);
+    parts.push(`💧${summary.maxPop}%`);
   }
 
-  return parts.join(" / ") || "天気情報あり";
+  return parts.join(" / ") || "🌤️天気情報あり";
 }
 
 function normalizeWeatherText(text) {
-  return text.replace(/\s+/g, " ").replace(/　+/g, " ").trim().split(" ")[0] || "";
+  return String(text || "").replace(/\s+/g, " ").replace(/　+/g, " ").trim().split(" ")[0] || "";
+}
+
+function getWeatherEmoji(text) {
+  const weatherText = String(text || "");
+  if (/雷/.test(weatherText)) return "⛈️";
+  if (/雪/.test(weatherText)) return "❄️";
+  if (/雨/.test(weatherText)) return "☔";
+  if (/くもり|曇/.test(weatherText)) return "☁️";
+  if (/晴/.test(weatherText)) return "☀️";
+  return "🌤️";
 }
 
 function renderDestinationWeatherInfo(message = null) {
@@ -465,61 +541,44 @@ function renderDestinationWeatherInfo(message = null) {
   const destination = getDestination(state.destination);
   if (!destination.areaCode) {
     target.textContent = destination.key === "none"
-      ? "行き先を選ぶと天気と気温を確認します。"
+      ? "行き先一覧に天気と気温を表示します。"
       : "追加した行き先は天気取得なし。チェックリストは通常通り作れます。";
     return;
   }
 
-  if (!state.weatherPreview || state.weatherPreview.destinationKey !== destination.key) {
-    target.textContent = "天気と気温を確認できます。";
+  const summary = state.weatherPreviews[destination.key];
+  if (!summary) {
+    target.textContent = "⏳天気と気温を確認中";
     return;
   }
 
-  if (state.weatherPreview.unavailable) {
+  if (summary.unavailable) {
     target.textContent = `${destination.label}の天気を取得できませんでした。チェックリストは通常通り作れます。`;
     return;
   }
 
-  target.textContent = `${destination.label}: ${formatWeatherSummary(state.weatherPreview)}`;
+  target.textContent = `${destination.label}: ${formatWeatherSummary(summary)}`;
 }
 
-async function updateDestinationWeatherPreview() {
+function updateDestinationWeatherPreview() {
   const destination = getDestination(state.destination);
-  state.weatherPreviewRequestId += 1;
-  const requestId = state.weatherPreviewRequestId;
-
   if (!destination.areaCode) {
-    state.weatherPreview = null;
-    renderPreferences();
+    renderDestinationOptions();
+    renderDestinationWeatherInfo();
     return;
   }
 
-  state.weatherPreview = null;
-  renderDestinationWeatherInfo(`${destination.label}の天気を確認中`);
-
-  try {
-    const forecast = await fetchForecast(destination.areaCode);
-    if (requestId !== state.weatherPreviewRequestId) return;
-    const summary = summarizeForecast(forecast, destination);
-    summary.destinationKey = destination.key;
-    state.weatherPreview = summary;
-  } catch (error) {
-    if (requestId !== state.weatherPreviewRequestId) return;
-    state.weatherPreview = {
-      destination: destination.label,
-      destinationKey: destination.key,
-      unavailable: true,
-    };
-  }
-
-  renderPreferences();
+  queueDestinationWeatherPreview(destination);
+  runWeatherPreviewQueue();
+  renderDestinationOptions();
+  renderDestinationWeatherInfo();
 }
 
-function renderPreferences() {
-  const target = document.querySelector("#preferenceList");
-  target.innerHTML = "";
-
+function renderDestinationOptions() {
   const destinationSelect = document.querySelector("#destinationSelect");
+  if (!destinationSelect) return;
+
+  const currentValue = getDestination(state.destination).key;
   destinationSelect.innerHTML = "";
   getDestinations().forEach((destination) => {
     const option = document.createElement("option");
@@ -527,8 +586,16 @@ function renderPreferences() {
     option.textContent = getDestinationOptionLabel(destination);
     destinationSelect.append(option);
   });
-  state.destination = getDestination(state.destination).key;
+  state.destination = currentValue;
   destinationSelect.value = state.destination;
+}
+
+function renderPreferences() {
+  const target = document.querySelector("#preferenceList");
+  target.innerHTML = "";
+
+  preloadDestinationWeather();
+  renderDestinationOptions();
   renderDestinationWeatherInfo();
 
   preferenceDefinitions.forEach((definition) => {
@@ -655,7 +722,6 @@ function addCustomDestination(label) {
     state.destination = destination.key;
   }
 
-  state.weatherPreview = null;
   renderPreferences();
   hideDestinationForm();
 }
@@ -766,7 +832,6 @@ function renderSavedTrips() {
       state.nights = trip.nights;
       state.destination = trip.destination || "none";
       state.weatherSummary = null;
-      state.weatherPreview = null;
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
       state.listBackTarget = "home";
       renderChecklist();
