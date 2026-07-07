@@ -68,7 +68,7 @@ function loadPreferences() {
     makeup: false,
     skincare: false,
     hairIron: false,
-    medicine: true,
+    medicine: false,
   };
 }
 
