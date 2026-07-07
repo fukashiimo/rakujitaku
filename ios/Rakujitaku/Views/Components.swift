@@ -142,9 +142,6 @@ struct GameStage: View {
             VStack(spacing: 8) {
                 switch mode {
                 case .loading:
-                    Text("さいしょの")
-                        .font(.title3.weight(.heavy))
-                        .foregroundStyle(Theme.muted)
                     Text("らくじたく")
                         .font(.system(size: 44, weight: .heavy))
                         .foregroundStyle(Theme.text)
