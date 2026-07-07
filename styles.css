@@ -303,8 +303,7 @@ h2 {
 .back-button,
 .option-card,
 .add-row button,
-.suggestion-button,
-.choice-pill {
+.suggestion-button {
   min-height: 48px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius);
@@ -325,8 +324,7 @@ h2 {
 
 .secondary-action,
 .back-button,
-.suggestion-button,
-.choice-pill {
+.suggestion-button {
   background: transparent;
 }
 
@@ -424,33 +422,6 @@ h2 {
 
 .check-row span {
   cursor: pointer;
-}
-
-.choice-group,
-.template-group {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.choice-group {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.template-group {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.choice-pill {
-  min-height: 54px;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.choice-pill.is-selected {
-  border-color: rgba(149, 213, 178, 0.56);
-  background: rgba(149, 213, 178, 0.14);
-  color: var(--text);
 }
 
 .progress-box {
@@ -651,10 +622,6 @@ h2 {
     grid-template-columns: 1fr;
   }
 
-  .choice-group,
-  .template-group {
-    grid-template-columns: 1fr;
-  }
 }
 
 @keyframes titleFloat {
