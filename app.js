@@ -34,9 +34,15 @@ const companionItems = {
   ],
   makeup: [
     { name: "メイク落とし", category: "洗面" },
+    { name: "メイクブラシ・スポンジ", category: "洗面" },
+    { name: "ビューラー", category: "洗面" },
+    { name: "リップクリーム", category: "洗面" },
   ],
   skincare: [
     { name: "洗顔料", category: "洗面" },
+    { name: "化粧水", category: "洗面" },
+    { name: "乳液・クリーム", category: "洗面" },
+    { name: "フェイスパック", category: "洗面" },
   ],
   hairIron: [
     { name: "ヘアブラシ", category: "洗面" },
@@ -44,6 +50,9 @@ const companionItems = {
   ],
   medicine: [
     { name: "お薬手帳", category: "その他" },
+    { name: "痛み止め", category: "その他" },
+    { name: "胃薬", category: "その他" },
+    { name: "絆創膏", category: "その他" },
   ],
 };
 
@@ -296,14 +305,20 @@ function inferCategory(name) {
     name.includes("メガネ") ||
     name.includes("目薬") ||
     name.includes("メイク") ||
+    name.includes("ビューラー") ||
+    name.includes("リップ") ||
     name.includes("スキンケア") ||
     name.includes("洗顔") ||
+    name.includes("化粧水") ||
+    name.includes("乳液") ||
+    name.includes("クリーム") ||
+    name.includes("フェイスパック") ||
     name.includes("ヘアアイロン") ||
     name.includes("ヘアブラシ")
   ) {
     return "洗面";
   }
-  if (["充電器・ケーブル", "常備薬", "日焼け止め", "お薬手帳"].includes(name)) return "その他";
+  if (["充電器・ケーブル", "常備薬", "日焼け止め", "お薬手帳", "痛み止め", "胃薬", "絆創膏"].includes(name)) return "その他";
   return "追加";
 }
 
