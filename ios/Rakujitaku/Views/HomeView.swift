@@ -8,7 +8,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 30) {
                 VStack(alignment: .leading, spacing: 8) {
                     Eyebrow(text: "RAKUJITAKU")
-                    Text("さいしょのらくじたく")
+                    Text("らくじたく")
                         .font(.system(size: 30, weight: .bold))
                         .foregroundStyle(Theme.text)
                         .lineLimit(1)

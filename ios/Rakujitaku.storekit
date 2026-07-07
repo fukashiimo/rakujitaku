@@ -1,0 +1,40 @@
+{
+  "identifier" : "DBA3C652-EEE1-4A78-946D-A758039CBDB9",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "300",
+      "familyShareable" : false,
+      "internalID" : "9CCCEF20-B00F-4E4C-887D-709C67FADC3A",
+      "localizations" : [
+        {
+          "description" : "開発を応援していただきありがとうございます！",
+          "displayName" : "コーヒー1杯",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.shuyafukai.rakujitaku.tip.coffee",
+      "referenceName" : "Coffee Tip",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "B54UXU8NGQ",
+    "_failTransactionsEnabled" : false,
+    "_locale" : "ja_JP",
+    "_storefront" : "JPN",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

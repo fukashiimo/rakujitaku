@@ -7,17 +7,21 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2B7316DC8E86F0F4DE773A71 /* ScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B529FBE2FFA10BB9B501DFE /* ScreenshotTests.swift */; };
 		2F0F759E0C39F5CC7F5F1F24 /* RakujitakuApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6722BD1047EF6F9557337231 /* RakujitakuApp.swift */; };
 		3A2C03E7F2F9479D5B336592 /* PrefsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2226A6751A2BB41468B2CA53 /* PrefsView.swift */; };
 		54290816109E28FB8B98CA77 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0BFE3C5FD61155AE7ADFD1 /* ContentView.swift */; };
 		5516BC25CAA2F52BDC122B97 /* NightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AD025FC4D00BB8D79A6651C /* NightsView.swift */; };
+		62BB4EB4B2E3A06B1DB9B85A /* Rakujitaku.storekit in Resources */ = {isa = PBXBuildFile; fileRef = F62E36811ADF13B537C7306D /* Rakujitaku.storekit */; };
 		631FB8BEF19825A0795E77F5 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA285EB6B5D6BAF57CCC196A /* Components.swift */; };
 		8D1938CE3C4B14DD2BD70B01 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243DE15F2A2EF3B5765B5B9B /* HomeView.swift */; };
+		A24DF769BE1E4DF67313A042 /* TipJarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C17385569ABDD4C18D5582 /* TipJarTests.swift */; };
 		AFA560A5A8E0AB5AFDF42738 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1814B7D4125BCEF63393108A /* Assets.xcassets */; };
 		B077EA315659D6F792B00991 /* RakujitakuUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2AE0AF85142BFF502199C6E /* RakujitakuUITests.swift */; };
 		C36B1CF79588C4A316572D77 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A001AFF0C1C9A4132B2D857 /* Models.swift */; };
 		CD65A6573BF35A3FCFCB9496 /* ChecklistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB82B18F95AC91483A2A0DAC /* ChecklistView.swift */; };
 		D45EEA7389E823204A7F437F /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C148819517FA4F0C5188CBF /* AppStore.swift */; };
+		E54145BEAF21C4C0DF698972 /* TipJar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53DAFD3132C4D78C3379E620 /* TipJar.swift */; };
 		EDD43935DA838C007F25741A /* DoneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCBDAF9E08FF22781F75F78 /* DoneView.swift */; };
 /* End PBXBuildFile section */
 
@@ -29,32 +33,47 @@
 			remoteGlobalIDString = 1BB148E7A675421861C7C5EC;
 			remoteInfo = Rakujitaku;
 		};
+		69756979F9421BDBA772B933 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 779E6EF2A42D25337B26E8D1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1BB148E7A675421861C7C5EC;
+			remoteInfo = Rakujitaku;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		17C17385569ABDD4C18D5582 /* TipJarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipJarTests.swift; sourceTree = "<group>"; };
 		1814B7D4125BCEF63393108A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		19FB258C54C118C26A6BCCB5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1A001AFF0C1C9A4132B2D857 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		1B0984E0853D62349560A5B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2226A6751A2BB41468B2CA53 /* PrefsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefsView.swift; sourceTree = "<group>"; };
 		243DE15F2A2EF3B5765B5B9B /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		53DAFD3132C4D78C3379E620 /* TipJar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipJar.swift; sourceTree = "<group>"; };
 		5AD025FC4D00BB8D79A6651C /* NightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightsView.swift; sourceTree = "<group>"; };
 		5C0BFE3C5FD61155AE7ADFD1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		6722BD1047EF6F9557337231 /* RakujitakuApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RakujitakuApp.swift; sourceTree = "<group>"; };
 		6C148819517FA4F0C5188CBF /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		8834D2061221B7543205A64B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9B529FBE2FFA10BB9B501DFE /* ScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTests.swift; sourceTree = "<group>"; };
 		AA285EB6B5D6BAF57CCC196A /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		AB82B18F95AC91483A2A0DAC /* ChecklistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChecklistView.swift; sourceTree = "<group>"; };
 		B31A571211527601FFCDFCBB /* RakujitakuUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RakujitakuUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C2AE0AF85142BFF502199C6E /* RakujitakuUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RakujitakuUITests.swift; sourceTree = "<group>"; };
+		CBBBB718400B2F6AB0E470AC /* RakujitakuTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RakujitakuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCCBDAF9E08FF22781F75F78 /* DoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneView.swift; sourceTree = "<group>"; };
 		CF91CFF925A93514D640C485 /* Rakujitaku.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Rakujitaku.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F62E36811ADF13B537C7306D /* Rakujitaku.storekit */ = {isa = PBXFileReference; path = Rakujitaku.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		0C2B9DE16C343958AC6472AB = {
 			isa = PBXGroup;
 			children = (
+				F62E36811ADF13B537C7306D /* Rakujitaku.storekit */,
 				BEB46256297D1A446978CD66 /* Rakujitaku */,
+				BEB5CC3D8EAB4922A8A54320 /* RakujitakuTests */,
 				D58C64187464E65600A7E9F3 /* RakujitakuUITests */,
 				4230B8C3F82631379BB8C368 /* Products */,
 			);
@@ -80,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				CF91CFF925A93514D640C485 /* Rakujitaku.app */,
+				CBBBB718400B2F6AB0E470AC /* RakujitakuTests.xctest */,
 				B31A571211527601FFCDFCBB /* RakujitakuUITests.xctest */,
 			);
 			name = Products;
@@ -89,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				6C148819517FA4F0C5188CBF /* AppStore.swift */,
+				53DAFD3132C4D78C3379E620 /* TipJar.swift */,
 			);
 			path = Store;
 			sourceTree = "<group>";
@@ -114,11 +135,21 @@
 			path = Rakujitaku;
 			sourceTree = "<group>";
 		};
+		BEB5CC3D8EAB4922A8A54320 /* RakujitakuTests */ = {
+			isa = PBXGroup;
+			children = (
+				19FB258C54C118C26A6BCCB5 /* Info.plist */,
+				17C17385569ABDD4C18D5582 /* TipJarTests.swift */,
+			);
+			path = RakujitakuTests;
+			sourceTree = "<group>";
+		};
 		D58C64187464E65600A7E9F3 /* RakujitakuUITests */ = {
 			isa = PBXGroup;
 			children = (
 				1B0984E0853D62349560A5B7 /* Info.plist */,
 				C2AE0AF85142BFF502199C6E /* RakujitakuUITests.swift */,
+				9B529FBE2FFA10BB9B501DFE /* ScreenshotTests.swift */,
 			);
 			path = RakujitakuUITests;
 			sourceTree = "<group>";
@@ -157,6 +188,25 @@
 			productName = Rakujitaku;
 			productReference = CF91CFF925A93514D640C485 /* Rakujitaku.app */;
 			productType = "com.apple.product-type.application";
+		};
+		74F3970EF352A0F0C97680E3 /* RakujitakuTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7C74BF47D409D106A6C41AF2 /* Build configuration list for PBXNativeTarget "RakujitakuTests" */;
+			buildPhases = (
+				109B48EBCDE26412E04CC3E0 /* Sources */,
+				6C26C09DE533DF71141A6250 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				253E8912F0A58799D17FA204 /* PBXTargetDependency */,
+			);
+			name = RakujitakuTests;
+			packageProductDependencies = (
+			);
+			productName = RakujitakuTests;
+			productReference = CBBBB718400B2F6AB0E470AC /* RakujitakuTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		D1CBE2EECAB5C4FF171F43BC /* RakujitakuUITests */ = {
 			isa = PBXNativeTarget;
@@ -208,6 +258,7 @@
 			projectRoot = "";
 			targets = (
 				1BB148E7A675421861C7C5EC /* Rakujitaku */,
+				74F3970EF352A0F0C97680E3 /* RakujitakuTests */,
 				D1CBE2EECAB5C4FF171F43BC /* RakujitakuUITests */,
 			);
 		};
@@ -222,9 +273,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6C26C09DE533DF71141A6250 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				62BB4EB4B2E3A06B1DB9B85A /* Rakujitaku.storekit in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		109B48EBCDE26412E04CC3E0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A24DF769BE1E4DF67313A042 /* TipJarTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		669CF806CD5939D10F7A03CD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -239,6 +306,7 @@
 				5516BC25CAA2F52BDC122B97 /* NightsView.swift in Sources */,
 				3A2C03E7F2F9479D5B336592 /* PrefsView.swift in Sources */,
 				2F0F759E0C39F5CC7F5F1F24 /* RakujitakuApp.swift in Sources */,
+				E54145BEAF21C4C0DF698972 /* TipJar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -247,12 +315,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				B077EA315659D6F792B00991 /* RakujitakuUITests.swift in Sources */,
+				2B7316DC8E86F0F4DE773A71 /* ScreenshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		253E8912F0A58799D17FA204 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1BB148E7A675421861C7C5EC /* Rakujitaku */;
+			targetProxy = 69756979F9421BDBA772B933 /* PBXContainerItemProxy */;
+		};
 		61B7ED1CCA0D0698F75930FA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 1BB148E7A675421861C7C5EC /* Rakujitaku */;
@@ -354,6 +428,44 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		8267CD71C7B4C38FCBFE9AA4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				INFOPLIST_FILE = RakujitakuTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shuyafukai.rakujitakutests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Rakujitaku.app/Rakujitaku";
+			};
+			name = Debug;
+		};
+		ACC969CDDB752CC85CF749D4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				INFOPLIST_FILE = RakujitakuTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.shuyafukai.rakujitakutests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Rakujitaku.app/Rakujitaku";
 			};
 			name = Release;
 		};
@@ -477,6 +589,15 @@
 			buildConfigurations = (
 				B7862E8AB6E857E0FF32F6C4 /* Debug */,
 				6613C8DA1CBC6C96AF65279F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7C74BF47D409D106A6C41AF2 /* Build configuration list for PBXNativeTarget "RakujitakuTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8267CD71C7B4C38FCBFE9AA4 /* Debug */,
+				ACC969CDDB752CC85CF749D4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

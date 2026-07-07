@@ -3,6 +3,28 @@ options:
   bundleIdPrefix: com.shuyafukai
   createIntermediateGroups: true
 
+schemes:
+  Rakujitaku:
+    build:
+      targets:
+        Rakujitaku: all
+        RakujitakuTests: [test]
+        RakujitakuUITests: [test]
+    run:
+      config: Debug
+      storeKitConfiguration: Rakujitaku.storekit
+    test:
+      config: Debug
+      targets:
+        - RakujitakuTests
+        - RakujitakuUITests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
 targets:
   Rakujitaku:
     type: application
@@ -31,6 +53,28 @@ targets:
         DEVELOPMENT_TEAM: B54UXU8NGQ
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  RakujitakuTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: RakujitakuTests
+      - path: Rakujitaku.storekit
+        buildPhase: resources
+    dependencies:
+      - target: Rakujitaku
+    info:
+      path: RakujitakuTests/Info.plist
+      properties:
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shuyafukai.rakujitakutests
+        SWIFT_VERSION: "5"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Rakujitaku.app/Rakujitaku"
+        BUNDLE_LOADER: "$(TEST_HOST)"
 
   RakujitakuUITests:
     type: bundle.ui-testing
