@@ -25,6 +25,26 @@ const suggestionItems = [
   "生理用品",
 ];
 
+const companionItems = {
+  contacts: [
+    { name: "メガネ（夜用）", category: "洗面" },
+    { name: "コンタクトケース・洗浄液", category: "洗面" },
+  ],
+  makeup: [
+    { name: "メイク落とし", category: "洗面" },
+  ],
+  skincare: [
+    { name: "洗顔料", category: "洗面" },
+  ],
+  hairIron: [
+    { name: "ヘアブラシ", category: "洗面" },
+    { name: "ヘアアイロン用ポーチ", category: "洗面" },
+  ],
+  medicine: [
+    { name: "お薬手帳", category: "その他" },
+  ],
+};
+
 const state = {
   nights: 1,
   preferences: loadPreferences(),
@@ -75,6 +95,11 @@ function createItem(name, category, count = null) {
   };
 }
 
+function addChecklistItem(items, name, category, count = null) {
+  if (items.some((item) => normalizeItemName(item.name) === normalizeItemName(name))) return;
+  items.push(createItem(name, category, count));
+}
+
 function buildItems() {
   const items = [
     createItem("財布", "貴重品"),
@@ -88,20 +113,25 @@ function buildItems() {
   ];
 
   if (state.preferences.contacts) {
-    items.push(createItem(`コンタクト（${state.nights}泊分）`, "洗面", state.nights));
+    addChecklistItem(items, `コンタクト（${state.nights}泊分）`, "洗面", state.nights);
   }
   if (state.preferences.makeup) {
-    items.push(createItem("メイク用品", "洗面"));
+    addChecklistItem(items, "メイク用品", "洗面");
   }
   if (state.preferences.skincare) {
-    items.push(createItem(`スキンケア（${state.nights}泊分）`, "洗面", state.nights));
+    addChecklistItem(items, `スキンケア（${state.nights}泊分）`, "洗面", state.nights);
   }
   if (state.preferences.hairIron) {
-    items.push(createItem("ヘアアイロン", "洗面"));
+    addChecklistItem(items, "ヘアアイロン", "洗面");
   }
   if (state.preferences.medicine) {
-    items.push(createItem("常備薬", "その他"));
+    addChecklistItem(items, "常備薬", "その他");
   }
+
+  Object.entries(companionItems).forEach(([key, companions]) => {
+    if (!state.preferences[key]) return;
+    companions.forEach((item) => addChecklistItem(items, item.name, item.category));
+  });
 
   state.items = items;
   state.removedSuggestions = [];
@@ -257,10 +287,18 @@ function renderSavedTrips() {
 function inferCategory(name) {
   if (["財布", "スマホ", "鍵"].includes(name)) return "貴重品";
   if (name.includes("トップス") || name.includes("下着") || name.includes("靴下")) return "衣類";
-  if (name.includes("コンタクト") || name.includes("メイク") || name.includes("スキンケア") || name.includes("ヘアアイロン")) {
+  if (
+    name.includes("コンタクト") ||
+    name.includes("メガネ") ||
+    name.includes("メイク") ||
+    name.includes("スキンケア") ||
+    name.includes("洗顔") ||
+    name.includes("ヘアアイロン") ||
+    name.includes("ヘアブラシ")
+  ) {
     return "洗面";
   }
-  if (["充電器・ケーブル", "常備薬", "日焼け止め"].includes(name)) return "その他";
+  if (["充電器・ケーブル", "常備薬", "日焼け止め", "お薬手帳"].includes(name)) return "その他";
   return "追加";
 }
 
