@@ -516,24 +516,28 @@ h2 {
   cursor: pointer;
 }
 
-.add-form {
+.add-form,
+.more-nights-form {
   display: grid;
   gap: 10px;
   margin-top: 18px;
 }
 
-.add-form label {
+.add-form label,
+.more-nights-form label {
   color: var(--muted);
   font-weight: 700;
 }
 
-.add-row {
+.add-row,
+.more-nights-row {
   display: grid;
   grid-template-columns: 1fr 84px;
   gap: 10px;
 }
 
-.add-row input {
+.add-row input,
+.more-nights-row input {
   width: 100%;
   min-width: 0;
   min-height: 48px;
@@ -544,7 +548,8 @@ h2 {
   color: var(--text);
 }
 
-.add-row button {
+.add-row button,
+.more-nights-row button {
   background: #242424;
 }
 
@@ -602,6 +607,13 @@ h2 {
   border-radius: var(--radius);
   background: #101010;
   color: var(--text);
+}
+
+.weather-info {
+  color: var(--soft);
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 .done-panel {

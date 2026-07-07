@@ -80,8 +80,16 @@
           <button class="option-card" type="button" data-nights="1">1泊</button>
           <button class="option-card" type="button" data-nights="2">2泊</button>
           <button class="option-card" type="button" data-nights="3">3泊</button>
-          <button class="option-card" type="button" data-nights="4">それ以上</button>
+          <button class="option-card" type="button" id="moreNightsButton">それ以上</button>
         </div>
+
+        <form class="more-nights-form" id="moreNightsForm" hidden>
+          <label for="customNights">宿泊数を入力</label>
+          <div class="more-nights-row">
+            <input id="customNights" name="customNights" type="number" inputmode="numeric" min="4" max="30" value="4" />
+            <button type="submit">決定</button>
+          </div>
+        </form>
       </section>
 
       <section class="screen" id="prefsScreen" aria-labelledby="prefsTitle">
@@ -95,6 +103,7 @@
         <label class="select-field" for="destinationSelect">
           行き先
           <select id="destinationSelect" name="destination"></select>
+          <span class="weather-info" id="destinationWeatherInfo">行き先を選ぶと天気と気温を確認します。</span>
         </label>
 
         <div class="check-stack" id="preferenceList"></div>
