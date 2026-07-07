@@ -1,3 +1,15 @@
+// ============================================================
+// 収益化設定（アフィリエイトID）
+// 登録手順は MONETIZE.md を参照。IDが空のままでもリンクは通常の
+// 検索ページとして動作し、IDを設定すると成果報酬の対象になる。
+// ============================================================
+const affiliateConfig = {
+  // Amazonアソシエイトのトラッキングid（例: "rakujitaku-22"）
+  amazonTag: "",
+  // 楽天アフィリエイトid（例: "1a2b3c4d.5e6f7g8h.1a2b3c4d.5e6f7g8h"）
+  rakutenId: "",
+};
+
 const screens = {
   home: document.querySelector("#homeScreen"),
   nights: document.querySelector("#nightsScreen"),
@@ -180,14 +192,29 @@ function renderChecklist() {
     block.innerHTML = `<h2>${category}</h2>`;
 
     categoryItems.forEach((item) => {
+      const purchasable = isPurchasable(item);
       const row = document.createElement("div");
       row.className = `item-row${item.checked ? " is-checked" : ""}`;
       row.innerHTML = `
         <input type="checkbox" id="${item.id}" ${item.checked ? "checked" : ""} data-item="${item.id}" />
         <label for="${item.id}">${item.name}</label>
+        ${purchasable ? `<button class="buy-button" type="button" aria-label="${item.name}を買う" aria-expanded="false" data-buy="${item.id}">🛒</button>` : ""}
         <button class="delete-button" type="button" aria-label="${item.name}を削除" data-delete="${item.id}">×</button>
       `;
       block.append(row);
+
+      if (purchasable) {
+        const searchName = normalizeItemName(item.name);
+        const panel = document.createElement("div");
+        panel.className = "buy-links";
+        panel.hidden = true;
+        panel.dataset.buyPanel = item.id;
+        panel.innerHTML = `
+          <a href="${buildAmazonUrl(searchName)}" target="_blank" rel="noopener sponsored">Amazonで探す</a>
+          <a href="${buildRakutenUrl(searchName)}" target="_blank" rel="noopener sponsored">楽天で探す</a>
+        `;
+        block.append(panel);
+      }
     });
 
     target.append(block);
@@ -229,6 +256,29 @@ function renderSuggestions() {
 
 function normalizeItemName(name) {
   return name.replace(/（.*?）/g, "").trim();
+}
+
+const nonPurchasableNames = ["財布", "スマホ", "鍵", "お薬手帳", "常備薬"];
+
+function isPurchasable(item) {
+  if (item.category === "貴重品") return false;
+  return !nonPurchasableNames.includes(normalizeItemName(item.name));
+}
+
+function buildAmazonUrl(name) {
+  const url = new URL("https://www.amazon.co.jp/s");
+  url.searchParams.set("k", name);
+  if (affiliateConfig.amazonTag) {
+    url.searchParams.set("tag", affiliateConfig.amazonTag);
+  }
+  return url.toString();
+}
+
+function buildRakutenUrl(name) {
+  const searchUrl = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(name)}/`;
+  if (!affiliateConfig.rakutenId) return searchUrl;
+  const encoded = encodeURIComponent(searchUrl);
+  return `https://hb.afl.rakuten.co.jp/hgc/${affiliateConfig.rakutenId}/?pc=${encoded}&m=${encoded}`;
 }
 
 function addItem(name) {
@@ -354,6 +404,16 @@ document.addEventListener("click", (event) => {
     state.nights = Number(nightButton.dataset.nights);
     renderPreferences();
     showScreen("prefs");
+  }
+
+  const buyButton = event.target.closest("[data-buy]");
+  if (buyButton) {
+    const panel = document.querySelector(`[data-buy-panel="${buyButton.dataset.buy}"]`);
+    if (panel) {
+      panel.hidden = !panel.hidden;
+      buyButton.setAttribute("aria-expanded", String(!panel.hidden));
+    }
+    return;
   }
 
   const deleteButton = event.target.closest("[data-delete]");

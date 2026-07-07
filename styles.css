@@ -477,7 +477,7 @@ h2 {
 
 .item-row {
   display: grid;
-  grid-template-columns: 24px 1fr auto;
+  grid-template-columns: 24px 1fr auto auto;
   gap: 10px;
   align-items: center;
   padding: 13px 16px;
@@ -513,6 +513,50 @@ h2 {
   background: transparent;
   color: var(--danger);
   cursor: pointer;
+}
+
+.buy-button {
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  font-size: 0.95rem;
+  opacity: 0.7;
+  transition: opacity 140ms ease;
+}
+
+.buy-button:hover,
+.buy-button[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.buy-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 16px 14px 50px;
+}
+
+.buy-links[hidden] {
+  display: none;
+}
+
+.buy-links a {
+  padding: 7px 12px;
+  border: 1px solid rgba(248, 200, 106, 0.35);
+  border-radius: 999px;
+  background: rgba(248, 200, 106, 0.08);
+  color: var(--accent);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.ad-disclosure {
+  margin: 0 0 18px;
+  color: var(--soft);
+  font-size: 0.78rem;
+  line-height: 1.6;
 }
 
 .add-form {
