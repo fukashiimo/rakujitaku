@@ -697,6 +697,68 @@ h2 {
   gap: 14px;
 }
 
+/* ===== optional weather disclosure ===== */
+.weather-section {
+  margin: 18px 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: visible;
+}
+
+.weather-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.weather-summary::-webkit-details-marker {
+  display: none;
+}
+
+.weather-summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(45deg);
+  transition: transform 200ms ease;
+}
+
+.weather-section[open] .weather-summary::after {
+  transform: rotate(-135deg);
+}
+
+.weather-optional {
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: var(--soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.weather-body {
+  padding: 4px 16px 18px;
+}
+
+.weather-body .destination-field,
+.weather-body .date-field {
+  margin-bottom: 14px;
+}
+
+.weather-body .date-field {
+  margin-bottom: 0;
+}
+
 /* ===== custom destination dropdown ===== */
 .select-trigger {
   display: flex;

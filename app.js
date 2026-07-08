@@ -8,65 +8,25 @@ const screens = {
 
 const preferenceDefinitions = [
   { key: "contacts", label: "コンタクトを使う" },
-  { key: "makeup", label: "メイクを持っていく" },
-  { key: "skincare", label: "スキンケアを持っていく" },
+  { key: "makeup", label: "メイク用品を持っていく" },
+  { key: "skincare", label: "スキンケア用品を持っていく" },
   { key: "hairIron", label: "ヘアアイロンを使う" },
-  { key: "medicine", label: "常備薬がある" },
-  { key: "kids", label: "子ども連れ" },
 ];
 
 const suggestionItems = [
   "モバイルバッテリー",
+  "充電ケーブル",
   "イヤホン",
+  "常備薬",
+  "エコバッグ",
+  "ビニール袋",
   "ティッシュ",
   "マスク",
   "ハンカチ",
   "タオル",
   "ナイトブラ",
   "生理用品",
-  "航空券・予約確認",
-  "身分証",
-  "乗車券・ICカード",
-  "運転免許証",
-  "ETCカード",
 ];
-
-const companionItems = {
-  contacts: [
-    { name: "メガネ（夜用）", category: "洗面" },
-    { name: "予備コンタクト", category: "洗面" },
-    { name: "コンタクトケース・洗浄液", category: "洗面" },
-    { name: "目薬", category: "洗面" },
-  ],
-  makeup: [
-    { name: "メイク落とし", category: "洗面" },
-    { name: "メイクブラシ・スポンジ", category: "洗面" },
-    { name: "ビューラー", category: "洗面" },
-    { name: "リップクリーム", category: "洗面" },
-  ],
-  skincare: [
-    { name: "洗顔料", category: "洗面" },
-    { name: "化粧水", category: "洗面" },
-    { name: "乳液・クリーム", category: "洗面" },
-    { name: "フェイスパック", category: "洗面" },
-  ],
-  hairIron: [
-    { name: "ヘアブラシ", category: "洗面" },
-    { name: "ヘアアイロン用ポーチ", category: "洗面" },
-  ],
-  medicine: [
-    { name: "お薬手帳", category: "その他" },
-    { name: "痛み止め", category: "その他" },
-    { name: "胃薬", category: "その他" },
-    { name: "絆創膏", category: "その他" },
-  ],
-  kids: [
-    { name: "子どもの着替え", category: "衣類" },
-    { name: "おやつ", category: "その他" },
-    { name: "ウェットティッシュ", category: "その他" },
-    { name: "母子手帳・保険証", category: "貴重品" },
-  ],
-};
 
 const destinationDefinitions = [
   { key: "none", label: "未設定", areaCode: null },
@@ -152,8 +112,6 @@ function loadPreferences() {
     makeup: false,
     skincare: false,
     hairIron: false,
-    medicine: false,
-    kids: false,
   };
 }
 
@@ -293,77 +251,62 @@ function addChecklistItem(items, name, category, count = null) {
   items.push(createItem(name, category, count));
 }
 
+// 持ち物生成仕様（天気条件は含まない）に沿って持ち物リストを作る
 function buildItems() {
-  const items = [
-    createItem("財布", "貴重品"),
-    createItem("スマホ", "貴重品"),
-    createItem("鍵", "貴重品"),
-    createItem("充電器・ケーブル", "その他"),
-    createItem("日焼け止め", "その他"),
-  ];
+  const nights = state.nights;
+  const items = [];
 
-  if (state.nights > 0) {
-    addChecklistItem(items, `トップス（${state.nights}日分）`, "衣類", state.nights);
-    addChecklistItem(items, `ボトムス（${state.nights}日分）`, "衣類", state.nights);
-    addChecklistItem(items, `パジャマ（${state.nights}泊分）`, "衣類", state.nights);
-    addChecklistItem(items, `下着（${state.nights}日分）`, "衣類", state.nights);
-    addChecklistItem(items, `靴下（${state.nights}日分）`, "衣類", state.nights);
+  // ① 常に表示する（デフォルト）
+  // 貴重品
+  addChecklistItem(items, "財布", "貴重品");
+  addChecklistItem(items, "スマホ", "貴重品");
+  addChecklistItem(items, "家の鍵", "貴重品");
+
+  // 衣類（泊数に応じて自動生成。日帰りは無し）
+  if (nights > 0) {
+    addChecklistItem(items, `トップス（${nights}泊分）`, "衣類", nights);
+    addChecklistItem(items, `ボトムス（${nights}泊分）`, "衣類", nights);
+    addChecklistItem(items, `インナー（上）（${nights}泊分）`, "衣類", nights);
+    addChecklistItem(items, `インナー（下）（${nights}泊分）`, "衣類", nights);
+    addChecklistItem(items, `靴下（${nights}泊分）`, "衣類", nights);
+    addChecklistItem(items, "パジャマ", "衣類"); // 1泊以上なら1着
   }
 
+  // 洗面
+  addChecklistItem(items, "歯ブラシ", "洗面");
+
+  // その他
+  addChecklistItem(items, "日焼け止め", "その他");
+  if (nights > 0) {
+    addChecklistItem(items, "充電器・ケーブル", "その他"); // 1泊以上のみ
+  } else {
+    addChecklistItem(items, "モバイルバッテリー", "その他"); // 日帰りのみ
+  }
+
+  // ② 初回設定による条件付き表示
+  const nightsSuffix = nights > 0 ? `（${nights}泊分）` : "";
   if (state.preferences.contacts) {
-    addChecklistItem(items, `コンタクト（${state.nights}泊分）`, "洗面", state.nights);
+    addChecklistItem(items, `コンタクト${nightsSuffix}`, "洗面", nights || null);
+    addChecklistItem(items, `コンタクト液${nightsSuffix}`, "洗面", nights || null);
+    addChecklistItem(items, "メガネ", "洗面");
   }
   if (state.preferences.makeup) {
     addChecklistItem(items, "メイク用品", "洗面");
+    if (nights > 0) {
+      addChecklistItem(items, `メイク落とし（${nights}泊分）`, "洗面", nights); // 1泊以上のみ
+    }
   }
   if (state.preferences.skincare) {
-    addChecklistItem(items, `スキンケア（${state.nights}泊分）`, "洗面", state.nights);
+    const times = nights * 2; // 泊数 × 2（朝晩）
+    const skincareLabel = times > 0 ? `スキンケア用品（朝晩${times}回分）` : "スキンケア用品";
+    addChecklistItem(items, skincareLabel, "洗面", times || null);
   }
   if (state.preferences.hairIron) {
     addChecklistItem(items, "ヘアアイロン", "洗面");
   }
-  if (state.preferences.medicine) {
-    addChecklistItem(items, "常備薬", "その他");
-  }
-
-  Object.entries(companionItems).forEach(([key, companions]) => {
-    if (!state.preferences[key]) return;
-    companions.forEach((item) => addChecklistItem(items, item.name, item.category));
-  });
 
   state.items = items;
   state.removedSuggestions = [];
-}
-
-async function applyWeatherItems(items) {
-  state.weatherSummary = null;
-  const destinations = getSelectedDestinations().filter((destination) => destination.areaCode);
-  if (destinations.length === 0) return;
-
-  const summaries = await Promise.all(destinations.map((destination) => getDestinationWeatherSummary(destination)));
-  const availableSummaries = summaries.filter((summary) => !summary.unavailable);
-  state.weatherSummary = {
-    date: state.travelDate,
-    summaries,
-    unavailable: availableSummaries.length === 0,
-    needsRainGear: availableSummaries.some((summary) => summary.needsRainGear),
-    needsHeatCare: availableSummaries.some((summary) => summary.needsHeatCare),
-    needsColdCare: availableSummaries.some((summary) => summary.needsColdCare),
-  };
-
-  if (state.weatherSummary.needsRainGear) {
-    addChecklistItem(items, "折りたたみ傘", "その他");
-    addChecklistItem(items, "雨具", "その他");
-  }
-  if (state.weatherSummary.needsHeatCare) {
-    addChecklistItem(items, "帽子", "衣類");
-    addChecklistItem(items, "汗拭きシート", "その他");
-    addChecklistItem(items, "飲み物", "その他");
-  }
-  if (state.weatherSummary.needsColdCare) {
-    addChecklistItem(items, "羽織", "衣類");
-    addChecklistItem(items, "カイロ", "その他");
-  }
 }
 
 function preloadDestinationWeather() {
@@ -441,11 +384,6 @@ async function fetchDestinationWeatherPreview(request) {
     renderSelectedDestinations();
     renderDestinationWeatherInfo();
   }
-}
-
-async function buildItemsWithWeather() {
-  buildItems();
-  await applyWeatherItems(state.items);
 }
 
 async function fetchForecast(areaCode) {
@@ -799,9 +737,8 @@ function renderChecklist() {
   const dateLabel = ` · ${getForecastDateLabel()}`;
   const destinationName = getDestinationListLabel();
   const destinationLabel = destinationName ? ` · ${destinationName}` : "";
-  const weatherLabel = getWeatherSummaryLabel();
   document.querySelector("#tripSummary").textContent =
-    `${nightsLabel}${dateLabel}${destinationLabel}${weatherLabel}の支度`;
+    `${nightsLabel}${dateLabel}${destinationLabel}の支度`;
 
   const target = document.querySelector("#checklist");
   target.innerHTML = "";
@@ -865,7 +802,9 @@ function renderSuggestions() {
 }
 
 function normalizeItemName(name) {
-  return name.replace(/（.*?）/g, "").trim();
+  // 数量サフィックス（○泊分・○日分・朝晩○回分・その○）だけを除去し、
+  // 「（上）」「（下）」のような識別用の括弧は残す
+  return name.replace(/（[^（）]*(?:泊分|日分|回分|その[0-9０-９]+)[^（）]*）/g, "").trim();
 }
 
 function addItem(name) {
@@ -926,17 +865,6 @@ function removeDestinationKey(key) {
   renderDestinationOptions();
   renderSelectedDestinations();
   renderDestinationWeatherInfo();
-}
-
-function getWeatherSummaryLabel() {
-  if (!state.weatherSummary) return "";
-  if (state.weatherSummary.unavailable) return " · 予報なし";
-
-  const labels = [];
-  if (state.weatherSummary.needsRainGear) labels.push("雨対策");
-  if (state.weatherSummary.needsHeatCare) labels.push("暑さ対策");
-  if (state.weatherSummary.needsColdCare) labels.push("寒さ対策");
-  return labels.length > 0 ? ` · ${labels.join("/")}` : " · 天気追加なし";
 }
 
 function getItemHistory() {
@@ -1274,13 +1202,8 @@ document.addEventListener("change", (event) => {
   }
 });
 
-document.querySelector("#buildListButton").addEventListener("click", async () => {
-  const button = document.querySelector("#buildListButton");
-  button.disabled = true;
-  button.textContent = "天気を確認中";
-  await buildItemsWithWeather();
-  button.disabled = false;
-  button.textContent = "チェックリストへ";
+document.querySelector("#buildListButton").addEventListener("click", () => {
+  buildItems();
   state.listBackTarget = "prefs";
   renderChecklist();
   showScreen("list");
