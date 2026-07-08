@@ -270,6 +270,7 @@ function showDestinationForm() {
   const button = document.querySelector("#addDestinationButton");
   if (!form || !input || !button) return;
 
+  closeDestinationPanel();
   form.hidden = false;
   button.setAttribute("aria-expanded", "true");
 
@@ -307,6 +308,7 @@ function showScreen(name) {
 
   if (name !== "prefs") {
     hideDestinationForm();
+    closeDestinationPanel();
   }
 
   if (name === "home") {
@@ -601,6 +603,13 @@ function formatWeatherSummary(summary) {
   return parts.join(" / ") || "🌤️天気情報あり";
 }
 
+function formatWeatherBadge(summary) {
+  const weatherText = normalizeWeatherText(summary.weatherText);
+  const emoji = getWeatherEmoji(weatherText || summary.weatherText);
+  const temp = summary.maxTemp !== null ? `${summary.maxTemp}°` : summary.minTemp !== null ? `${summary.minTemp}°` : "";
+  return `${emoji}${temp}`;
+}
+
 function normalizeWeatherText(text) {
   return String(text || "").replace(/\s+/g, " ").replace(/　+/g, " ").trim().split(" ")[0] || "";
 }
@@ -658,18 +667,93 @@ function updateDestinationWeatherPreview() {
 }
 
 function renderDestinationOptions() {
-  const destinationSelect = document.querySelector("#destinationSelect");
-  if (!destinationSelect) return;
+  const optionsContainer = document.querySelector("#destinationOptions");
+  if (!optionsContainer) return;
 
-  destinationSelect.innerHTML = "";
-  getDestinations().forEach((destination) => {
-    const option = document.createElement("option");
-    option.value = destination.key;
-    option.textContent = getDestinationOptionLabel(destination);
-    option.disabled = destination.key !== "none" && state.destinationKeys.includes(destination.key);
-    destinationSelect.append(option);
+  const filterInput = document.querySelector("#destinationFilter");
+  const query = (filterInput ? filterInput.value : "").trim();
+
+  optionsContainer.innerHTML = "";
+  const destinations = getDestinations().filter((destination) => destination.key !== "none");
+  const matches = query
+    ? destinations.filter((destination) => destination.label.includes(query))
+    : destinations;
+
+  matches.forEach((destination) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "select-option";
+    option.dataset.destinationKey = destination.key;
+    option.setAttribute("role", "option");
+    const selected = state.destinationKeys.includes(destination.key);
+    option.setAttribute("aria-selected", selected ? "true" : "false");
+    if (selected) option.classList.add("is-selected");
+
+    const name = document.createElement("span");
+    name.className = "select-option-name";
+    name.textContent = destination.label;
+    option.append(name);
+
+    if (destination.areaCode) {
+      const meta = document.createElement("span");
+      meta.className = "select-option-meta";
+      const summary = getWeatherPreview(destination);
+      if (!summary) meta.textContent = "⏳";
+      else if (summary.unavailable) meta.textContent = "⚠️";
+      else meta.textContent = formatWeatherBadge(summary);
+      option.append(meta);
+    }
+
+    optionsContainer.append(option);
   });
-  destinationSelect.value = "none";
+
+  const noMatch = document.querySelector("#destinationNoMatch");
+  if (noMatch) noMatch.hidden = matches.length > 0;
+
+  updateDestinationTriggerLabel();
+}
+
+function updateDestinationTriggerLabel() {
+  const label = document.querySelector("#destinationTriggerLabel");
+  if (!label) return;
+  const summary = getDestinationListLabel();
+  label.textContent = summary || "行き先を選ぶ";
+  label.classList.toggle("is-placeholder", !summary);
+}
+
+function openDestinationPanel() {
+  const panel = document.querySelector("#destinationPanel");
+  const trigger = document.querySelector("#destinationTrigger");
+  const control = document.querySelector("#destinationControl");
+  if (!panel || !trigger || !control || !panel.hidden) return;
+
+  hideDestinationForm();
+  const filter = document.querySelector("#destinationFilter");
+  if (filter) filter.value = "";
+  renderDestinationOptions();
+
+  panel.hidden = false;
+  trigger.setAttribute("aria-expanded", "true");
+  control.classList.add("is-open");
+  if (filter) window.requestAnimationFrame(() => filter.focus());
+}
+
+function closeDestinationPanel() {
+  const panel = document.querySelector("#destinationPanel");
+  const trigger = document.querySelector("#destinationTrigger");
+  const control = document.querySelector("#destinationControl");
+  if (!panel || panel.hidden) return;
+
+  panel.hidden = true;
+  if (trigger) trigger.setAttribute("aria-expanded", "false");
+  if (control) control.classList.remove("is-open");
+}
+
+function toggleDestinationPanel() {
+  const panel = document.querySelector("#destinationPanel");
+  if (!panel) return;
+  if (panel.hidden) openDestinationPanel();
+  else closeDestinationPanel();
 }
 
 function renderSelectedDestinations() {
@@ -1168,6 +1252,21 @@ document.addEventListener("click", (event) => {
     toggleDestinationForm();
   }
 
+  const destinationTrigger = event.target.closest("#destinationTrigger");
+  if (destinationTrigger) {
+    toggleDestinationPanel();
+    return;
+  }
+
+  const destinationOption = event.target.closest(".select-option");
+  if (destinationOption) {
+    addDestinationKey(destinationOption.dataset.destinationKey);
+    updateDestinationWeatherPreview();
+    const filter = document.querySelector("#destinationFilter");
+    if (filter) filter.focus();
+    return;
+  }
+
   const removeDestinationButton = event.target.closest("[data-remove-destination]");
   if (removeDestinationButton) {
     removeDestinationKey(removeDestinationButton.dataset.removeDestination);
@@ -1198,6 +1297,28 @@ document.addEventListener("click", (event) => {
       toggleItem(input.dataset.item);
     }
   }
+
+  const panel = document.querySelector("#destinationPanel");
+  if (panel && !panel.hidden && !event.target.closest("#destinationControl")) {
+    closeDestinationPanel();
+  }
+});
+
+document.addEventListener("input", (event) => {
+  if (event.target.closest("#destinationFilter")) {
+    renderDestinationOptions();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    const panel = document.querySelector("#destinationPanel");
+    if (panel && !panel.hidden) {
+      closeDestinationPanel();
+      const trigger = document.querySelector("#destinationTrigger");
+      if (trigger) trigger.focus();
+    }
+  }
 });
 
 document.addEventListener("change", (event) => {
@@ -1205,12 +1326,6 @@ document.addEventListener("change", (event) => {
   if (preferenceInput) {
     state.preferences[preferenceInput.dataset.pref] = preferenceInput.checked;
     savePreferences();
-  }
-
-  const destinationSelect = event.target.closest("#destinationSelect");
-  if (destinationSelect) {
-    addDestinationKey(destinationSelect.value);
-    updateDestinationWeatherPreview();
   }
 
   const travelDateInput = event.target.closest("#travelDate");
