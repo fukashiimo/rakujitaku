@@ -382,7 +382,6 @@ async function fetchDestinationWeatherPreview(request) {
     weatherPreviewRequestKeys.delete(cacheKey);
     renderDestinationOptions();
     renderSelectedDestinations();
-    renderDestinationWeatherInfo();
   }
 }
 
@@ -524,38 +523,11 @@ function getWeatherEmoji(text) {
   return "🌤️";
 }
 
-function renderDestinationWeatherInfo(message = null) {
-  const target = document.querySelector("#destinationWeatherInfo");
-  if (!target) return;
-
-  if (message) {
-    target.textContent = message;
-    return;
-  }
-
-  const destinations = getSelectedDestinations();
-  if (destinations.length === 0) {
-    target.textContent = "行き先一覧に天気と気温を表示します。";
-    return;
-  }
-
-  target.textContent = destinations
-    .map((destination) => {
-      if (!destination.areaCode) return `${destination.label}: 天気取得なし`;
-      const summary = getWeatherPreview(destination);
-      if (!summary) return `${destination.label}: ⏳確認中`;
-      if (summary.unavailable) return `${destination.label}: ⚠️予報なし`;
-      return `${destination.label}: ${formatWeatherSummary(summary)}`;
-    })
-    .join(" ／ ");
-}
-
 function updateDestinationWeatherPreview() {
   const destination = getSelectedDestinations().find((entry) => entry.areaCode && !getWeatherPreview(entry));
   if (!destination) {
     renderDestinationOptions();
     renderSelectedDestinations();
-    renderDestinationWeatherInfo();
     return;
   }
 
@@ -563,7 +535,6 @@ function updateDestinationWeatherPreview() {
   runWeatherPreviewQueue();
   renderDestinationOptions();
   renderSelectedDestinations();
-  renderDestinationWeatherInfo();
 }
 
 function renderDestinationOptions() {
@@ -708,7 +679,6 @@ function setTravelDate(value) {
   preloadDestinationWeather();
   renderDestinationOptions();
   renderSelectedDestinations();
-  renderDestinationWeatherInfo();
 }
 
 function renderPreferences() {
@@ -719,7 +689,6 @@ function renderPreferences() {
   preloadDestinationWeather();
   renderDestinationOptions();
   renderSelectedDestinations();
-  renderDestinationWeatherInfo();
 
   preferenceDefinitions.forEach((definition) => {
     const row = document.createElement("label");
@@ -857,14 +826,12 @@ function addDestinationKey(key) {
 
   renderDestinationOptions();
   renderSelectedDestinations();
-  renderDestinationWeatherInfo();
 }
 
 function removeDestinationKey(key) {
   state.destinationKeys = normalizeDestinationKeys(state.destinationKeys.filter((destinationKey) => destinationKey !== key));
   renderDestinationOptions();
   renderSelectedDestinations();
-  renderDestinationWeatherInfo();
 }
 
 function getItemHistory() {

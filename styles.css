@@ -685,12 +685,6 @@ h2 {
   color: var(--text);
 }
 
-.weather-info {
-  color: var(--soft);
-  font-size: 0.86rem;
-  font-weight: 500;
-  line-height: 1.6;
-}
 
 .done-panel {
   display: grid;
