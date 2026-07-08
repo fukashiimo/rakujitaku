@@ -28,75 +28,14 @@ const suggestionItems = [
   "生理用品",
 ];
 
-const destinationDefinitions = [
-  { key: "none", label: "未設定", areaCode: null },
-  { key: "sapporo", label: "札幌", areaCode: "016000" },
-  { key: "aomori", label: "青森", areaCode: "020000" },
-  { key: "morioka", label: "盛岡", areaCode: "030000" },
-  { key: "sendai", label: "仙台", areaCode: "040000" },
-  { key: "akita", label: "秋田", areaCode: "050000" },
-  { key: "yamagata", label: "山形", areaCode: "060000" },
-  { key: "fukushima", label: "福島", areaCode: "070000" },
-  { key: "mito", label: "水戸", areaCode: "080000" },
-  { key: "utsunomiya", label: "宇都宮", areaCode: "090000" },
-  { key: "maebashi", label: "前橋", areaCode: "100000" },
-  { key: "saitama", label: "さいたま", areaCode: "110000" },
-  { key: "chiba", label: "千葉", areaCode: "120000" },
-  { key: "tokyo", label: "東京", areaCode: "130000" },
-  { key: "yokohama", label: "横浜", areaCode: "140000" },
-  { key: "niigata", label: "新潟", areaCode: "150000" },
-  { key: "toyama", label: "富山", areaCode: "160000" },
-  { key: "kanazawa", label: "金沢", areaCode: "170000" },
-  { key: "fukui", label: "福井", areaCode: "180000" },
-  { key: "kofu", label: "甲府", areaCode: "190000" },
-  { key: "nagano", label: "長野", areaCode: "200000" },
-  { key: "gifu", label: "岐阜", areaCode: "210000" },
-  { key: "shizuoka", label: "静岡", areaCode: "220000" },
-  { key: "nagoya", label: "名古屋", areaCode: "230000" },
-  { key: "tsu", label: "津", areaCode: "240000" },
-  { key: "otsu", label: "大津", areaCode: "250000" },
-  { key: "kyoto", label: "京都", areaCode: "260000" },
-  { key: "osaka", label: "大阪", areaCode: "270000" },
-  { key: "kobe", label: "神戸", areaCode: "280000" },
-  { key: "nara", label: "奈良", areaCode: "290000" },
-  { key: "wakayama", label: "和歌山", areaCode: "300000" },
-  { key: "tottori", label: "鳥取", areaCode: "310000" },
-  { key: "matsue", label: "松江", areaCode: "320000" },
-  { key: "okayama", label: "岡山", areaCode: "330000" },
-  { key: "hiroshima", label: "広島", areaCode: "340000" },
-  { key: "yamaguchi", label: "山口", areaCode: "350000" },
-  { key: "tokushima", label: "徳島", areaCode: "360000" },
-  { key: "takamatsu", label: "高松", areaCode: "370000" },
-  { key: "matsuyama", label: "松山", areaCode: "380000" },
-  { key: "kochi", label: "高知", areaCode: "390000" },
-  { key: "fukuoka", label: "福岡", areaCode: "400000" },
-  { key: "saga", label: "佐賀", areaCode: "410000" },
-  { key: "nagasaki", label: "長崎", areaCode: "420000" },
-  { key: "kumamoto", label: "熊本", areaCode: "430000" },
-  { key: "oita", label: "大分", areaCode: "440000" },
-  { key: "miyazaki", label: "宮崎", areaCode: "450000" },
-  { key: "kagoshima", label: "鹿児島", areaCode: "460100" },
-  { key: "naha", label: "那覇", areaCode: "471000" },
-];
-
 const state = {
   nights: 1,
-  destinationKeys: [],
-  travelDate: getTodayDate(),
-  customDestinations: loadCustomDestinations(),
-  weatherSummary: null,
-  weatherPreviews: {},
   preferences: loadPreferences(),
   items: [],
   removedSuggestions: [],
   listBackTarget: "prefs",
   activeTripId: null,
 };
-
-const weatherPreviewQueue = [];
-const weatherPreviewRequestKeys = new Set();
-const weatherPreviewConcurrency = 4;
-let weatherPreviewActiveCount = 0;
 
 function loadPreferences() {
   try {
@@ -118,68 +57,6 @@ function loadPreferences() {
 
 function savePreferences() {
   localStorage.setItem("rakujitaku_preferences", JSON.stringify(state.preferences));
-}
-
-function loadCustomDestinations() {
-  try {
-    const destinations = JSON.parse(localStorage.getItem("rakujitaku_custom_destinations"));
-    if (!Array.isArray(destinations)) return [];
-
-    return destinations
-      .map((destination) => ({
-        key: typeof destination.key === "string" ? destination.key : "",
-        label: normalizeDestinationLabel(destination.label || ""),
-        areaCode: null,
-        custom: true,
-      }))
-      .filter((destination) => destination.key.startsWith("custom:") && destination.label);
-  } catch (error) {
-    localStorage.removeItem("rakujitaku_custom_destinations");
-    return [];
-  }
-}
-
-function saveCustomDestinations() {
-  localStorage.setItem("rakujitaku_custom_destinations", JSON.stringify(state.customDestinations.slice(0, 30)));
-}
-
-function normalizeDestinationLabel(label) {
-  return String(label).replace(/\s+/g, " ").replace(/　+/g, " ").trim();
-}
-
-function formatLocalDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getTodayDate() {
-  return formatLocalDate(new Date());
-}
-
-function addDays(date, days) {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate;
-}
-
-function getTomorrowDate() {
-  return formatLocalDate(addDays(new Date(), 1));
-}
-
-function normalizeDate(value) {
-  const text = String(value || "");
-  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : getTodayDate();
-}
-
-function getForecastDateLabel(date = state.travelDate) {
-  const normalizedDate = normalizeDate(date);
-  if (normalizedDate === getTodayDate()) return "今日";
-  if (normalizedDate === getTomorrowDate()) return "明日";
-
-  const [, month, day] = normalizedDate.split("-");
-  return `${Number(month)}/${Number(day)}`;
 }
 
 function hideMoreNightsForm() {
@@ -226,10 +103,6 @@ function showScreen(name) {
 
   if (name !== "nights") {
     hideMoreNightsForm();
-  }
-
-  if (name !== "prefs") {
-    closeDestinationPanel();
   }
 
   if (name === "home") {
@@ -310,386 +183,9 @@ function buildItems() {
   state.removedSuggestions = [];
 }
 
-function preloadDestinationWeather() {
-  getDestinations()
-    .filter((destination) => destination.areaCode)
-    .forEach((destination) => queueDestinationWeatherPreview(destination, state.travelDate));
-  runWeatherPreviewQueue();
-}
-
-function getWeatherPreviewKey(destinationKey, date = state.travelDate) {
-  return `${destinationKey}:${normalizeDate(date)}`;
-}
-
-function getWeatherPreview(destination, date = state.travelDate) {
-  return state.weatherPreviews[getWeatherPreviewKey(destination.key, date)];
-}
-
-function setWeatherPreview(destination, date, summary) {
-  state.weatherPreviews[getWeatherPreviewKey(destination.key, date)] = summary;
-}
-
-function queueDestinationWeatherPreview(destination, date = state.travelDate) {
-  const cacheKey = getWeatherPreviewKey(destination.key, date);
-  if (
-    state.weatherPreviews[cacheKey] ||
-    weatherPreviewRequestKeys.has(cacheKey)
-  ) {
-    return;
-  }
-
-  weatherPreviewRequestKeys.add(cacheKey);
-  weatherPreviewQueue.push({ destination, date: normalizeDate(date), cacheKey });
-}
-
-function runWeatherPreviewQueue() {
-  while (weatherPreviewActiveCount < weatherPreviewConcurrency && weatherPreviewQueue.length > 0) {
-    const request = weatherPreviewQueue.shift();
-    weatherPreviewActiveCount += 1;
-    fetchDestinationWeatherPreview(request).finally(() => {
-      weatherPreviewActiveCount -= 1;
-      runWeatherPreviewQueue();
-    });
-  }
-}
-
-async function getDestinationWeatherSummary(destination, date = state.travelDate) {
-  const cachedSummary = getWeatherPreview(destination, date);
-  if (cachedSummary && !cachedSummary.unavailable) return cachedSummary;
-
-  try {
-    const forecast = await fetchForecast(destination.areaCode);
-    const summary = summarizeForecast(forecast, destination, date);
-    summary.destinationKey = destination.key;
-    setWeatherPreview(destination, date, summary);
-    return summary;
-  } catch (error) {
-    const summary = {
-      destination: destination.label,
-      destinationKey: destination.key,
-      forecastDate: normalizeDate(date),
-      unavailable: true,
-    };
-    setWeatherPreview(destination, date, summary);
-    return summary;
-  }
-}
-
-async function fetchDestinationWeatherPreview(request) {
-  const { destination, date, cacheKey } = request;
-  try {
-    await getDestinationWeatherSummary(destination, date);
-  } finally {
-    weatherPreviewRequestKeys.delete(cacheKey);
-    renderDestinationOptions();
-    renderSelectedDestinations();
-  }
-}
-
-async function fetchForecast(areaCode) {
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 3000);
-  try {
-    const response = await fetch(`https://www.jma.go.jp/bosai/forecast/data/forecast/${areaCode}.json`, {
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw new Error(`forecast request failed: ${response.status}`);
-    }
-    return response.json();
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-}
-
-function getDateKey(value) {
-  return String(value || "").slice(0, 10);
-}
-
-function collectForecastValues(timeSeries, area, propName, targetDate) {
-  const timeDefines = timeSeries?.timeDefines || [];
-  const values = area?.[propName] || [];
-  return timeDefines
-    .map((time, index) => (getDateKey(time) === targetDate ? values[index] : null))
-    .filter((value) => value !== null && value !== "");
-}
-
-function summarizeForecast(forecast, destination, date = state.travelDate) {
-  const targetDate = normalizeDate(date);
-  const today = forecast[0];
-  const weekly = forecast[1];
-  const weatherSeries = today?.timeSeries?.[0];
-  const popSeries = today?.timeSeries?.[1];
-  const tempSeries = today?.timeSeries?.[2];
-  const weeklyPopSeries = weekly?.timeSeries?.[0];
-  const weeklyTempSeries = weekly?.timeSeries?.[1];
-  const weatherArea = weatherSeries?.areas?.[0];
-  const popArea = popSeries?.areas?.[0];
-  const tempArea = tempSeries?.areas?.[0];
-  const weeklyPopArea = weeklyPopSeries?.areas?.[0];
-  const weeklyTempArea = weeklyTempSeries?.areas?.[0];
-  const weathers = collectForecastValues(weatherSeries, weatherArea, "weathers", targetDate)
-    .filter((value, index, array) => array.indexOf(value) === index)
-    .join(" ");
-  const pops = [
-    ...collectForecastValues(popSeries, popArea, "pops", targetDate),
-    ...collectForecastValues(weeklyPopSeries, weeklyPopArea, "pops", targetDate),
-  ]
-    .filter((value) => value !== "")
-    .map((value) => Number(value))
-    .filter((value) => Number.isFinite(value));
-  const temps = [
-    ...collectForecastValues(tempSeries, tempArea, "temps", targetDate),
-    ...collectForecastValues(weeklyTempSeries, weeklyTempArea, "tempsMin", targetDate),
-    ...collectForecastValues(weeklyTempSeries, weeklyTempArea, "tempsMax", targetDate),
-  ]
-    .filter((value) => value !== "")
-    .map((value) => Number(value))
-    .filter((value) => Number.isFinite(value));
-
-  const maxPop = pops.length > 0 ? Math.max(...pops) : null;
-  const minTemp = temps.length > 0 ? Math.min(...temps) : null;
-  const maxTemp = temps.length > 0 ? Math.max(...temps) : null;
-
-  return {
-    destination: destination.label,
-    destinationKey: destination.key,
-    forecastDate: targetDate,
-    unavailable: !weathers && maxPop === null && minTemp === null && maxTemp === null,
-    weatherText: weathers,
-    maxPop,
-    minTemp,
-    maxTemp,
-    needsRainGear: /雨|雪|雷/.test(weathers) || (maxPop !== null && maxPop >= 40),
-    needsHeatCare: maxTemp !== null && maxTemp >= 30,
-    needsColdCare: minTemp !== null && minTemp <= 10,
-  };
-}
-
-function getDestinationOptionLabel(destination) {
-  if (!destination.areaCode) {
-    return destination.label;
-  }
-
-  const summary = getWeatherPreview(destination);
-  if (!summary) {
-    return `${destination.label}（⏳確認中）`;
-  }
-  if (summary.unavailable) {
-    return `${destination.label}（⚠️予報なし）`;
-  }
-
-  return `${destination.label}（${formatWeatherSummary(summary)}）`;
-}
-
-function formatWeatherSummary(summary) {
-  const parts = [];
-  const weatherText = normalizeWeatherText(summary.weatherText);
-  const weatherEmoji = getWeatherEmoji(weatherText || summary.weatherText);
-  if (weatherText) parts.push(`${weatherEmoji}${weatherText}`);
-
-  if (summary.minTemp !== null && summary.maxTemp !== null) {
-    parts.push(summary.minTemp === summary.maxTemp ? `🌡️${summary.maxTemp}℃` : `🌡️${summary.minTemp}-${summary.maxTemp}℃`);
-  } else if (summary.maxTemp !== null) {
-    parts.push(`🌡️最高${summary.maxTemp}℃`);
-  } else if (summary.minTemp !== null) {
-    parts.push(`🌡️最低${summary.minTemp}℃`);
-  }
-
-  if (summary.maxPop !== null) {
-    parts.push(`💧${summary.maxPop}%`);
-  }
-
-  return parts.join(" / ") || "🌤️天気情報あり";
-}
-
-function formatWeatherBadge(summary) {
-  const weatherText = normalizeWeatherText(summary.weatherText);
-  const emoji = getWeatherEmoji(weatherText || summary.weatherText);
-  const temp = summary.maxTemp !== null ? `${summary.maxTemp}°` : summary.minTemp !== null ? `${summary.minTemp}°` : "";
-  return `${emoji}${temp}`;
-}
-
-function normalizeWeatherText(text) {
-  return String(text || "").replace(/\s+/g, " ").replace(/　+/g, " ").trim().split(" ")[0] || "";
-}
-
-function getWeatherEmoji(text) {
-  const weatherText = String(text || "");
-  if (/雷/.test(weatherText)) return "⛈️";
-  if (/雪/.test(weatherText)) return "❄️";
-  if (/雨/.test(weatherText)) return "☔";
-  if (/くもり|曇/.test(weatherText)) return "☁️";
-  if (/晴/.test(weatherText)) return "☀️";
-  return "🌤️";
-}
-
-function updateDestinationWeatherPreview() {
-  const destination = getSelectedDestinations().find((entry) => entry.areaCode && !getWeatherPreview(entry));
-  if (!destination) {
-    renderDestinationOptions();
-    renderSelectedDestinations();
-    return;
-  }
-
-  queueDestinationWeatherPreview(destination);
-  runWeatherPreviewQueue();
-  renderDestinationOptions();
-  renderSelectedDestinations();
-}
-
-function renderDestinationOptions() {
-  const optionsContainer = document.querySelector("#destinationOptions");
-  if (!optionsContainer) return;
-
-  const filterInput = document.querySelector("#destinationFilter");
-  const query = (filterInput ? filterInput.value : "").trim();
-
-  optionsContainer.innerHTML = "";
-  const destinations = getDestinations().filter((destination) => destination.key !== "none");
-  const matches = query
-    ? destinations.filter((destination) => destination.label.includes(query))
-    : destinations;
-
-  matches.forEach((destination) => {
-    const option = document.createElement("button");
-    option.type = "button";
-    option.className = "select-option";
-    option.dataset.destinationKey = destination.key;
-    option.setAttribute("role", "option");
-    const selected = state.destinationKeys.includes(destination.key);
-    option.setAttribute("aria-selected", selected ? "true" : "false");
-    if (selected) option.classList.add("is-selected");
-
-    const name = document.createElement("span");
-    name.className = "select-option-name";
-    name.textContent = destination.label;
-    option.append(name);
-
-    if (destination.areaCode) {
-      const meta = document.createElement("span");
-      meta.className = "select-option-meta";
-      const summary = getWeatherPreview(destination);
-      if (!summary) meta.textContent = "⏳";
-      else if (summary.unavailable) meta.textContent = "⚠️";
-      else meta.textContent = formatWeatherBadge(summary);
-      option.append(meta);
-    }
-
-    optionsContainer.append(option);
-  });
-
-  const noMatch = document.querySelector("#destinationNoMatch");
-  if (noMatch) noMatch.hidden = matches.length > 0;
-
-  updateDestinationTriggerLabel();
-}
-
-function updateDestinationTriggerLabel() {
-  const label = document.querySelector("#destinationTriggerLabel");
-  if (!label) return;
-  const summary = getDestinationListLabel();
-  label.textContent = summary || "行き先を選ぶ";
-  label.classList.toggle("is-placeholder", !summary);
-}
-
-function openDestinationPanel() {
-  const panel = document.querySelector("#destinationPanel");
-  const trigger = document.querySelector("#destinationTrigger");
-  const control = document.querySelector("#destinationControl");
-  if (!panel || !trigger || !control || !panel.hidden) return;
-
-  const filter = document.querySelector("#destinationFilter");
-  if (filter) filter.value = "";
-  renderDestinationOptions();
-
-  panel.hidden = false;
-  trigger.setAttribute("aria-expanded", "true");
-  control.classList.add("is-open");
-  if (filter) window.requestAnimationFrame(() => filter.focus());
-}
-
-function closeDestinationPanel() {
-  const panel = document.querySelector("#destinationPanel");
-  const trigger = document.querySelector("#destinationTrigger");
-  const control = document.querySelector("#destinationControl");
-  if (!panel || panel.hidden) return;
-
-  panel.hidden = true;
-  if (trigger) trigger.setAttribute("aria-expanded", "false");
-  if (control) control.classList.remove("is-open");
-}
-
-function toggleDestinationPanel() {
-  const panel = document.querySelector("#destinationPanel");
-  if (!panel) return;
-  if (panel.hidden) openDestinationPanel();
-  else closeDestinationPanel();
-}
-
-function renderSelectedDestinations() {
-  const target = document.querySelector("#selectedDestinations");
-  if (!target) return;
-
-  target.innerHTML = "";
-  const destinations = getSelectedDestinations();
-  if (destinations.length === 0) {
-    const empty = document.createElement("span");
-    empty.className = "destination-empty";
-    empty.textContent = "未設定";
-    target.append(empty);
-    return;
-  }
-
-  destinations.forEach((destination) => {
-    const chip = document.createElement("span");
-    chip.className = "destination-chip";
-    const summary = destination.areaCode ? getWeatherPreview(destination) : null;
-    const label = document.createElement("span");
-    label.textContent = destination.areaCode && summary && !summary.unavailable
-      ? `${destination.label} ${formatWeatherSummary(summary)}`
-      : destination.label;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.setAttribute("aria-label", `${destination.label}を外す`);
-    button.dataset.removeDestination = destination.key;
-    button.textContent = "×";
-    chip.append(label, button);
-    target.append(chip);
-  });
-}
-
-function renderDateControls() {
-  const input = document.querySelector("#travelDate");
-  if (input) {
-    const today = new Date();
-    input.min = getTodayDate();
-    input.max = formatLocalDate(addDays(today, 7));
-    input.value = state.travelDate;
-  }
-
-  document.querySelectorAll("[data-date-preset]").forEach((button) => {
-    const presetDate = button.dataset.datePreset === "tomorrow" ? getTomorrowDate() : getTodayDate();
-    button.classList.toggle("is-selected", state.travelDate === presetDate);
-  });
-}
-
-function setTravelDate(value) {
-  state.travelDate = normalizeDate(value);
-  renderDateControls();
-  preloadDestinationWeather();
-  renderDestinationOptions();
-  renderSelectedDestinations();
-}
-
 function renderPreferences() {
   const target = document.querySelector("#preferenceList");
   target.innerHTML = "";
-
-  renderDateControls();
-  preloadDestinationWeather();
-  renderDestinationOptions();
-  renderSelectedDestinations();
 
   preferenceDefinitions.forEach((definition) => {
     const row = document.createElement("label");
@@ -704,11 +200,7 @@ function renderPreferences() {
 
 function renderChecklist() {
   const nightsLabel = state.nights === 0 ? "日帰り" : `${state.nights}泊`;
-  const dateLabel = ` · ${getForecastDateLabel()}`;
-  const destinationName = getDestinationListLabel();
-  const destinationLabel = destinationName ? ` · ${destinationName}` : "";
-  document.querySelector("#tripSummary").textContent =
-    `${nightsLabel}${dateLabel}${destinationLabel}の支度`;
+  document.querySelector("#tripSummary").textContent = `${nightsLabel}の支度`;
 
   const target = document.querySelector("#checklist");
   target.innerHTML = "";
@@ -785,54 +277,6 @@ function addItem(name) {
   const displayName = sameCount > 0 ? `${cleanName}（その${sameCount + 1}）` : cleanName;
   state.items.push(createItem(displayName, "追加"));
   renderChecklist();
-}
-
-function getDestinations() {
-  return destinationDefinitions.concat(state.customDestinations);
-}
-
-function getDestination(key) {
-  return getDestinations().find((destination) => destination.key === key) || destinationDefinitions[0];
-}
-
-function normalizeDestinationKeys(keys) {
-  const inputKeys = Array.isArray(keys) ? keys : [keys];
-  const destinationKeys = inputKeys
-    .filter((key) => key && key !== "none")
-    .filter((key) => getDestination(key).key !== "none");
-  return destinationKeys.filter((key, index, array) => array.indexOf(key) === index);
-}
-
-function getTripDestinationKeys(trip) {
-  return normalizeDestinationKeys(trip.destinationKeys || trip.destinations || trip.destination || []);
-}
-
-function getSelectedDestinations() {
-  return normalizeDestinationKeys(state.destinationKeys).map((key) => getDestination(key));
-}
-
-function getDestinationListLabel(keys = state.destinationKeys) {
-  const labels = normalizeDestinationKeys(keys).map((key) => getDestination(key).label);
-  if (labels.length === 0) return "";
-  if (labels.length <= 3) return labels.join("・");
-  return `${labels.slice(0, 3).join("・")}ほか${labels.length - 3}件`;
-}
-
-function addDestinationKey(key) {
-  if (key === "none") {
-    state.destinationKeys = [];
-  } else {
-    state.destinationKeys = normalizeDestinationKeys(state.destinationKeys.concat(key));
-  }
-
-  renderDestinationOptions();
-  renderSelectedDestinations();
-}
-
-function removeDestinationKey(key) {
-  state.destinationKeys = normalizeDestinationKeys(state.destinationKeys.filter((destinationKey) => destinationKey !== key));
-  renderDestinationOptions();
-  renderSelectedDestinations();
 }
 
 function getItemHistory() {
@@ -915,12 +359,9 @@ function migrateSavedTrips() {
 
 function describeTrip(trip) {
   const nightsLabel = trip.nights === 0 ? "日帰り" : `${trip.nights}泊`;
-  const dateLabel = getForecastDateLabel(trip.travelDate || getTodayDate());
-  const destinationName = getDestinationListLabel(getTripDestinationKeys(trip));
-  const destinationLabel = destinationName ? ` · ${destinationName}` : "";
   return {
     title: trip.name || `${nightsLabel}の支度`,
-    detail: `${nightsLabel} · ${dateLabel}${destinationLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用`,
+    detail: `${nightsLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用`,
   };
 }
 
@@ -952,9 +393,6 @@ function renderSavedTrips() {
       setSavedTrips(sortedTrips);
       state.activeTripId = trip.id;
       state.nights = trip.nights;
-      state.destinationKeys = getTripDestinationKeys(trip);
-      state.travelDate = normalizeDate(trip.travelDate || getTodayDate());
-      state.weatherSummary = null;
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
       state.listBackTarget = "home";
       renderChecklist();
@@ -1039,9 +477,6 @@ function inferCategory(name) {
 function applyTripData(trip, { name, itemNames, addedItemNames }) {
   trip.name = name;
   trip.nights = state.nights;
-  trip.destination = state.destinationKeys[0] || "none";
-  trip.destinationKeys = state.destinationKeys;
-  trip.travelDate = state.travelDate;
   trip.itemNames = itemNames;
   trip.addedItemHistory = addedItemNames;
 }
@@ -1072,8 +507,6 @@ function saveCurrentTrip() {
   // ② 内容が完全一致する既存の支度があれば、それを更新する
   const signature = getTripSignature({
     nights: state.nights,
-    destinationKeys: state.destinationKeys,
-    travelDate: state.travelDate,
     itemNames,
   });
   const existingIndex = trips.findIndex((trip) => getTripSignature(trip) === signature);
@@ -1089,9 +522,6 @@ function saveCurrentTrip() {
     id: crypto.randomUUID(),
     name,
     nights: state.nights,
-    destination: state.destinationKeys[0] || "none",
-    destinationKeys: state.destinationKeys,
-    travelDate: state.travelDate,
     itemNames,
     addedItemHistory: addedItemNames,
     usedCount: 1,
@@ -1157,12 +587,7 @@ function renderDoneScreen() {
 }
 
 function getTripSignature(trip) {
-  return [
-    trip.nights,
-    normalizeDate(trip.travelDate || getTodayDate()),
-    getTripDestinationKeys(trip).join(",") || "none",
-    (trip.itemNames || []).join("|"),
-  ].join(":");
+  return [trip.nights, (trip.itemNames || []).join("|")].join(":");
 }
 
 document.addEventListener("click", (event) => {
@@ -1179,32 +604,6 @@ document.addEventListener("click", (event) => {
   const moreNightsButton = event.target.closest("#moreNightsButton");
   if (moreNightsButton) {
     showMoreNightsForm();
-  }
-
-  const destinationTrigger = event.target.closest("#destinationTrigger");
-  if (destinationTrigger) {
-    toggleDestinationPanel();
-    return;
-  }
-
-  const destinationOption = event.target.closest(".select-option");
-  if (destinationOption) {
-    addDestinationKey(destinationOption.dataset.destinationKey);
-    updateDestinationWeatherPreview();
-    const filter = document.querySelector("#destinationFilter");
-    if (filter) filter.focus();
-    return;
-  }
-
-  const removeDestinationButton = event.target.closest("[data-remove-destination]");
-  if (removeDestinationButton) {
-    removeDestinationKey(removeDestinationButton.dataset.removeDestination);
-    return;
-  }
-
-  const datePresetButton = event.target.closest("[data-date-preset]");
-  if (datePresetButton) {
-    setTravelDate(datePresetButton.dataset.datePreset === "tomorrow" ? getTomorrowDate() : getTodayDate());
   }
 
   const deleteButton = event.target.closest("[data-delete]");
@@ -1226,28 +625,6 @@ document.addEventListener("click", (event) => {
       toggleItem(input.dataset.item);
     }
   }
-
-  const panel = document.querySelector("#destinationPanel");
-  if (panel && !panel.hidden && !event.target.closest("#destinationControl")) {
-    closeDestinationPanel();
-  }
-});
-
-document.addEventListener("input", (event) => {
-  if (event.target.closest("#destinationFilter")) {
-    renderDestinationOptions();
-  }
-});
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    const panel = document.querySelector("#destinationPanel");
-    if (panel && !panel.hidden) {
-      closeDestinationPanel();
-      const trigger = document.querySelector("#destinationTrigger");
-      if (trigger) trigger.focus();
-    }
-  }
 });
 
 document.addEventListener("change", (event) => {
@@ -1255,11 +632,6 @@ document.addEventListener("change", (event) => {
   if (preferenceInput) {
     state.preferences[preferenceInput.dataset.pref] = preferenceInput.checked;
     savePreferences();
-  }
-
-  const travelDateInput = event.target.closest("#travelDate");
-  if (travelDateInput) {
-    setTravelDate(travelDateInput.value);
   }
 
   const itemInput = event.target.closest("[data-item]");

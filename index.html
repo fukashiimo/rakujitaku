@@ -20,7 +20,7 @@
     <meta property="og:url" content="https://fukashiimo.github.io/rakujitaku/" />
     <meta property="og:locale" content="ja_JP" />
     <meta name="twitter:card" content="summary" />
-    <link rel="stylesheet" href="styles.css?v=20260708i" />
+    <link rel="stylesheet" href="styles.css?v=20260708j" />
   </head>
   <body>
     <main class="shell">
@@ -101,41 +101,6 @@
         </header>
 
         <div class="check-stack" id="preferenceList"></div>
-
-        <details class="weather-section" id="weatherSection">
-          <summary class="weather-summary">
-            <span>行き先の天気を見る</span>
-            <span class="weather-optional">任意</span>
-          </summary>
-          <div class="weather-body">
-            <div class="destination-field">
-              <span class="destination-label" id="destinationLabel">行き先</span>
-              <div class="destination-control" id="destinationControl">
-                <button class="select-trigger" type="button" id="destinationTrigger" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="destinationLabel">
-                  <span class="select-trigger-value is-placeholder" id="destinationTriggerLabel">行き先を選ぶ</span>
-                  <span class="select-trigger-arrow" aria-hidden="true"></span>
-                </button>
-                <div class="select-panel" id="destinationPanel" role="listbox" aria-label="行き先の候補" hidden>
-                  <div class="select-search">
-                    <input type="text" id="destinationFilter" placeholder="都市名で検索" autocomplete="off" enterkeyhint="search" />
-                  </div>
-                  <div class="select-options" id="destinationOptions"></div>
-                  <p class="select-empty" id="destinationNoMatch" hidden>該当する行き先がありません</p>
-                </div>
-              </div>
-              <div class="selected-destinations" id="selectedDestinations"></div>
-            </div>
-
-            <div class="date-field">
-              <label class="date-label" for="travelDate">日付</label>
-              <div class="date-control">
-                <button class="date-preset-button" type="button" data-date-preset="today">今日</button>
-                <button class="date-preset-button" type="button" data-date-preset="tomorrow">明日</button>
-                <input id="travelDate" name="travelDate" type="date" />
-              </div>
-            </div>
-          </div>
-        </details>
 
         <button class="primary-action full" type="button" id="buildListButton">チェックリストへ</button>
       </section>
@@ -225,6 +190,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260708i"></script>
+    <script src="app.js?v=20260708j"></script>
   </body>
 </html>
