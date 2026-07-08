@@ -253,43 +253,6 @@ function showMoreNightsForm() {
   });
 }
 
-function hideDestinationForm() {
-  const form = document.querySelector("#destinationForm");
-  const button = document.querySelector("#addDestinationButton");
-  if (form) {
-    form.hidden = true;
-  }
-  if (button) {
-    button.setAttribute("aria-expanded", "false");
-  }
-}
-
-function showDestinationForm() {
-  const form = document.querySelector("#destinationForm");
-  const input = document.querySelector("#destinationName");
-  const button = document.querySelector("#addDestinationButton");
-  if (!form || !input || !button) return;
-
-  closeDestinationPanel();
-  form.hidden = false;
-  button.setAttribute("aria-expanded", "true");
-
-  window.requestAnimationFrame(() => {
-    input.focus();
-  });
-}
-
-function toggleDestinationForm() {
-  const form = document.querySelector("#destinationForm");
-  if (!form) return;
-
-  if (form.hidden) {
-    showDestinationForm();
-  } else {
-    hideDestinationForm();
-  }
-}
-
 function selectNights(value) {
   state.nights = value;
   hideMoreNightsForm();
@@ -307,7 +270,6 @@ function showScreen(name) {
   }
 
   if (name !== "prefs") {
-    hideDestinationForm();
     closeDestinationPanel();
   }
 
@@ -727,7 +689,6 @@ function openDestinationPanel() {
   const control = document.querySelector("#destinationControl");
   if (!panel || !trigger || !control || !panel.hidden) return;
 
-  hideDestinationForm();
   const filter = document.querySelector("#destinationFilter");
   if (filter) filter.value = "";
   renderDestinationOptions();
@@ -965,31 +926,6 @@ function removeDestinationKey(key) {
   renderDestinationOptions();
   renderSelectedDestinations();
   renderDestinationWeatherInfo();
-}
-
-function addCustomDestination(label) {
-  const cleanLabel = normalizeDestinationLabel(label);
-  if (!cleanLabel) return;
-
-  const existing = getDestinations().find(
-    (destination) => normalizeDestinationLabel(destination.label) === cleanLabel,
-  );
-
-  if (existing) {
-    addDestinationKey(existing.key);
-  } else {
-    const destination = {
-      key: `custom:${crypto.randomUUID()}`,
-      label: cleanLabel,
-      areaCode: null,
-      custom: true,
-    };
-    state.customDestinations.unshift(destination);
-    saveCustomDestinations();
-    addDestinationKey(destination.key);
-  }
-
-  hideDestinationForm();
 }
 
 function getWeatherSummaryLabel() {
@@ -1247,11 +1183,6 @@ document.addEventListener("click", (event) => {
     showMoreNightsForm();
   }
 
-  const addDestinationButton = event.target.closest("#addDestinationButton");
-  if (addDestinationButton) {
-    toggleDestinationForm();
-  }
-
   const destinationTrigger = event.target.closest("#destinationTrigger");
   if (destinationTrigger) {
     toggleDestinationPanel();
@@ -1365,18 +1296,6 @@ document.querySelector("#moreNightsForm").addEventListener("submit", (event) => 
   const nights = Math.min(30, Math.max(4, Number(input.value) || 4));
   input.value = String(nights);
   selectNights(nights);
-});
-
-document.querySelector("#destinationForm").addEventListener("submit", (event) => {
-  event.preventDefault();
-  const input = document.querySelector("#destinationName");
-  const label = normalizeDestinationLabel(input.value);
-  if (!label) {
-    input.focus();
-    return;
-  }
-  addCustomDestination(label);
-  input.value = "";
 });
 
 document.querySelector("#addForm").addEventListener("submit", (event) => {

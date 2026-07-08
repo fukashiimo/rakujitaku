@@ -20,7 +20,7 @@
     <meta property="og:url" content="https://fukashiimo.github.io/rakujitaku/" />
     <meta property="og:locale" content="ja_JP" />
     <meta name="twitter:card" content="summary" />
-    <link rel="stylesheet" href="styles.css?v=20260708" />
+    <link rel="stylesheet" href="styles.css?v=20260708b" />
   </head>
   <body>
     <main class="shell">
@@ -107,7 +107,6 @@
               <span class="select-trigger-value is-placeholder" id="destinationTriggerLabel">行き先を選ぶ</span>
               <span class="select-trigger-arrow" aria-hidden="true"></span>
             </button>
-            <button class="destination-add-button" type="button" id="addDestinationButton" aria-label="行き先を追加" aria-controls="destinationForm" aria-expanded="false">＋</button>
             <div class="select-panel" id="destinationPanel" role="listbox" aria-label="行き先の候補" hidden>
               <div class="select-search">
                 <input type="text" id="destinationFilter" placeholder="都道府県で検索" autocomplete="off" enterkeyhint="search" />
@@ -118,13 +117,6 @@
           </div>
           <div class="selected-destinations" id="selectedDestinations"></div>
           <span class="weather-info" id="destinationWeatherInfo">行き先を選ぶと天気と気温を確認します。</span>
-          <form class="destination-form" id="destinationForm" hidden>
-            <label for="destinationName">行き先を追加</label>
-            <div class="destination-row">
-              <input id="destinationName" name="destinationName" type="text" autocomplete="off" maxlength="24" placeholder="例：軽井沢" />
-              <button type="submit">追加</button>
-            </div>
-          </form>
         </div>
 
         <div class="date-field">
@@ -216,6 +208,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260708"></script>
+    <script src="app.js?v=20260708b"></script>
   </body>
 </html>

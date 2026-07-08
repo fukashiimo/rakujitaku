@@ -302,10 +302,8 @@ h2 {
 .secondary-action,
 .back-button,
 .option-card,
-.destination-add-button,
 .date-preset-button,
 .add-row button,
-.destination-row button,
 .suggestion-button {
   min-height: 48px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -525,36 +523,31 @@ h2 {
 }
 
 .add-form,
-.more-nights-form,
-.destination-form {
+.more-nights-form {
   display: grid;
   gap: 10px;
   margin-top: 18px;
 }
 
-.more-nights-form[hidden],
-.destination-form[hidden] {
+.more-nights-form[hidden] {
   display: none;
 }
 
 .add-form label,
-.more-nights-form label,
-.destination-form label {
+.more-nights-form label {
   color: var(--muted);
   font-weight: 700;
 }
 
 .add-row,
-.more-nights-row,
-.destination-row {
+.more-nights-row {
   display: grid;
   grid-template-columns: 1fr 84px;
   gap: 10px;
 }
 
 .add-row input,
-.more-nights-row input,
-.destination-row input {
+.more-nights-row input {
   width: 100%;
   min-width: 0;
   min-height: 48px;
@@ -566,9 +559,7 @@ h2 {
 }
 
 .add-row button,
-.more-nights-row button,
-.destination-row button,
-.destination-add-button {
+.more-nights-row button {
   background: #242424;
 }
 
@@ -625,9 +616,6 @@ h2 {
 
 .destination-control {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 48px;
-  gap: 10px;
 }
 
 .destination-label {
@@ -662,14 +650,6 @@ h2 {
   background: rgba(255, 255, 255, 0.08);
   color: var(--soft);
   cursor: pointer;
-}
-
-.destination-add-button {
-  border-radius: var(--radius);
-  color: var(--text);
-  cursor: pointer;
-  font-size: 1.45rem;
-  font-weight: 700;
 }
 
 .date-control {
