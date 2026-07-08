@@ -28,13 +28,6 @@ const suggestionItems = [
   "生理用品",
 ];
 
-// 天気予報に応じて「持ち物を追加」に提案する候補（保存には含めない）
-const weatherSuggestionSets = [
-  { flag: "needsRainGear", tag: "☔ 雨予報", items: ["折りたたみ傘", "レインコート", "濡れたもの用の袋"] },
-  { flag: "needsHeatCare", tag: "☀️ 暑さ対策", items: ["日焼け止め", "日傘", "汗拭きシート"] },
-  { flag: "needsColdCare", tag: "❄️ 寒さ対策", items: ["カイロ", "手袋", "マフラー"] },
-];
-
 const destinationDefinitions = [
   { key: "none", label: "未設定", areaCode: null },
   { key: "sapporo", label: "札幌", areaCode: "016000" },
@@ -244,14 +237,13 @@ function showScreen(name) {
   }
 }
 
-function createItem(name, category, count = null, fromWeather = false) {
+function createItem(name, category, count = null) {
   return {
     id: crypto.randomUUID(),
     name,
     category,
     count,
     checked: false,
-    fromWeather,
   };
 }
 
@@ -391,9 +383,6 @@ async function fetchDestinationWeatherPreview(request) {
     weatherPreviewRequestKeys.delete(cacheKey);
     renderDestinationOptions();
     renderSelectedDestinations();
-    if (screens.list.classList.contains("is-active")) {
-      renderWeatherSuggestions();
-    }
   }
 }
 
@@ -748,7 +737,6 @@ function renderChecklist() {
   });
 
   renderProgress();
-  renderWeatherSuggestions();
   renderSuggestions();
   renderItemHistory();
 }
@@ -783,83 +771,19 @@ function renderSuggestions() {
   });
 }
 
-// 選択中の行き先・旅行日の予報から、天気に応じた提案グループを作る
-function getWeatherSuggestionGroups() {
-  const summaries = getSelectedDestinations()
-    .filter((destination) => destination.areaCode)
-    .map((destination) => getWeatherPreview(destination, state.travelDate))
-    .filter((summary) => summary && !summary.unavailable);
-  if (summaries.length === 0) return [];
-
-  const existing = state.items.map((item) => normalizeItemName(item.name));
-  return weatherSuggestionSets
-    .filter((set) => summaries.some((summary) => summary[set.flag]))
-    .map((set) => ({
-      tag: set.tag,
-      items: set.items.filter((name) => !existing.includes(normalizeItemName(name))),
-    }))
-    .filter((group) => group.items.length > 0);
-}
-
-function renderWeatherSuggestions() {
-  const target = document.querySelector("#weatherSuggestions");
-  if (!target) return;
-  target.innerHTML = "";
-
-  const groups = getWeatherSuggestionGroups();
-  if (groups.length === 0) {
-    target.hidden = true;
-    return;
-  }
-  target.hidden = false;
-
-  const title = document.createElement("p");
-  title.className = "weather-suggest-title";
-  title.textContent = "天気のおすすめ（いつもの支度には保存されません）";
-  target.append(title);
-
-  groups.forEach((group) => {
-    const row = document.createElement("div");
-    row.className = "weather-suggest-row";
-    const tag = document.createElement("span");
-    tag.className = "weather-suggest-tag";
-    tag.textContent = group.tag;
-    row.append(tag);
-
-    group.items.forEach((name) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "suggestion-button is-weather";
-      button.textContent = `＋ ${name}`;
-      button.addEventListener("click", () => addItem(name, true));
-      row.append(button);
-    });
-
-    target.append(row);
-  });
-}
-
-// リスト画面で選択中の行き先の予報を取得（未取得分のみ）
-function ensureListWeatherPreviews() {
-  getSelectedDestinations()
-    .filter((destination) => destination.areaCode && !getWeatherPreview(destination))
-    .forEach((destination) => queueDestinationWeatherPreview(destination));
-  runWeatherPreviewQueue();
-}
-
 function normalizeItemName(name) {
   // 数量サフィックス（○泊分・○日分・朝晩○回分・その○）だけを除去し、
   // 「（上）」「（下）」のような識別用の括弧は残す
   return name.replace(/（[^（）]*(?:泊分|日分|回分|その[0-9０-９]+)[^（）]*）/g, "").trim();
 }
 
-function addItem(name, fromWeather = false) {
+function addItem(name) {
   const cleanName = name.trim();
   if (!cleanName) return;
 
   const sameCount = state.items.filter((item) => normalizeItemName(item.name) === cleanName).length;
   const displayName = sameCount > 0 ? `${cleanName}（その${sameCount + 1}）` : cleanName;
-  state.items.push(createItem(displayName, "追加", null, fromWeather));
+  state.items.push(createItem(displayName, "追加"));
   renderChecklist();
 }
 
@@ -1033,7 +957,6 @@ function renderSavedTrips() {
       state.weatherSummary = null;
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
       state.listBackTarget = "home";
-      ensureListWeatherPreviews();
       renderChecklist();
       showScreen("list");
     });
@@ -1133,10 +1056,8 @@ function finalizeSave(trips, addedItemNames) {
 
 function saveCurrentTrip() {
   const trips = getSavedTrips();
-  // 天気由来の持ち物（傘・合羽など）は保存対象から除外する
-  const savableItems = state.items.filter((item) => !item.fromWeather);
-  const itemNames = savableItems.map((item) => item.name);
-  const addedItemNames = savableItems.filter((item) => item.category === "追加").map((item) => item.name);
+  const itemNames = state.items.map((item) => item.name);
+  const addedItemNames = state.items.filter((item) => item.category === "追加").map((item) => item.name);
   const input = document.querySelector("#tripName");
   const name = input.value.trim();
 
@@ -1355,7 +1276,6 @@ document.querySelector("#buildListButton").addEventListener("click", () => {
   buildItems();
   state.activeTripId = null;
   state.listBackTarget = "prefs";
-  ensureListWeatherPreviews();
   renderChecklist();
   showScreen("list");
 });
