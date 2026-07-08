@@ -20,7 +20,7 @@
     <meta property="og:url" content="https://fukashiimo.github.io/rakujitaku/" />
     <meta property="og:locale" content="ja_JP" />
     <meta name="twitter:card" content="summary" />
-    <link rel="stylesheet" href="styles.css?v=20260708f" />
+    <link rel="stylesheet" href="styles.css?v=20260708g" />
   </head>
   <body>
     <main class="shell">
@@ -216,6 +216,15 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260708f"></script>
+    <div class="modal-overlay" id="saveSlotModal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="saveSlotTitle">
+        <h2 id="saveSlotTitle">保存できるのは3つまで</h2>
+        <p class="modal-desc">入れ替える支度を選ぶと、その支度が今の内容に置き換わります。</p>
+        <div class="modal-options" id="saveSlotOptions"></div>
+        <button class="secondary-action full" type="button" id="saveSlotCancel">やめる</button>
+      </div>
+    </div>
+
+    <script src="app.js?v=20260708g"></script>
   </body>
 </html>

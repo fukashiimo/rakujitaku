@@ -90,6 +90,7 @@ const state = {
   items: [],
   removedSuggestions: [],
   listBackTarget: "prefs",
+  activeTripId: null,
 };
 
 const weatherPreviewQueue = [];
@@ -897,6 +898,32 @@ function setSavedTrips(trips) {
   localStorage.setItem("rakujitaku_saved_trips", JSON.stringify(trips.slice(0, 3)));
 }
 
+// 旧データに安定IDを付与（上書き保存の対象特定に使う）
+function migrateSavedTrips() {
+  const trips = getSavedTrips();
+  let changed = false;
+  trips.forEach((trip) => {
+    if (!trip.id) {
+      trip.id = crypto.randomUUID();
+      changed = true;
+    }
+  });
+  if (changed) {
+    setSavedTrips(trips);
+  }
+}
+
+function describeTrip(trip) {
+  const nightsLabel = trip.nights === 0 ? "日帰り" : `${trip.nights}泊`;
+  const dateLabel = getForecastDateLabel(trip.travelDate || getTodayDate());
+  const destinationName = getDestinationListLabel(getTripDestinationKeys(trip));
+  const destinationLabel = destinationName ? ` · ${destinationName}` : "";
+  return {
+    title: trip.name || `${nightsLabel}の支度`,
+    detail: `${nightsLabel} · ${dateLabel}${destinationLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用`,
+  };
+}
+
 function renderSavedTrips() {
   const trips = getSavedTrips();
   const target = document.querySelector("#savedList");
@@ -912,21 +939,18 @@ function renderSavedTrips() {
     const button = document.createElement("button");
     button.className = "saved-card";
     button.type = "button";
-    const nightsLabel = trip.nights === 0 ? "日帰り" : `${trip.nights}泊`;
-    const dateLabel = getForecastDateLabel(trip.travelDate || getTodayDate());
-    const title = trip.name || `${nightsLabel}の支度`;
-    const destinationName = getDestinationListLabel(getTripDestinationKeys(trip));
-    const destinationLabel = destinationName ? ` · ${destinationName}` : "";
+    const info = describeTrip(trip);
     const titleText = document.createElement("strong");
-    titleText.textContent = title;
+    titleText.textContent = info.title;
     const detailText = document.createElement("span");
-    detailText.textContent = `${nightsLabel} · ${dateLabel}${destinationLabel} · ${trip.itemNames.length}個 · ${trip.usedCount}回使用`;
+    detailText.textContent = info.detail;
     button.append(titleText, detailText);
     button.addEventListener("click", () => {
       trip.usedCount += 1;
       trips.splice(index, 1);
       const sortedTrips = [trip, ...trips].sort((a, b) => b.usedCount - a.usedCount);
       setSavedTrips(sortedTrips);
+      state.activeTripId = trip.id;
       state.nights = trip.nights;
       state.destinationKeys = getTripDestinationKeys(trip);
       state.travelDate = normalizeDate(trip.travelDate || getTodayDate());
@@ -1012,12 +1036,40 @@ function inferCategory(name) {
   return "追加";
 }
 
+function applyTripData(trip, { name, itemNames, addedItemNames }) {
+  trip.name = name;
+  trip.nights = state.nights;
+  trip.destination = state.destinationKeys[0] || "none";
+  trip.destinationKeys = state.destinationKeys;
+  trip.travelDate = state.travelDate;
+  trip.itemNames = itemNames;
+  trip.addedItemHistory = addedItemNames;
+}
+
+function finalizeSave(trips, addedItemNames) {
+  rememberAddedItems(addedItemNames);
+  document.querySelector("#tripName").value = "";
+  state.activeTripId = null;
+  setSavedTrips(trips.sort((a, b) => b.usedCount - a.usedCount));
+  showScreen("home");
+}
+
 function saveCurrentTrip() {
   const trips = getSavedTrips();
   const itemNames = state.items.map((item) => item.name);
   const addedItemNames = state.items.filter((item) => item.category === "追加").map((item) => item.name);
   const input = document.querySelector("#tripName");
   const name = input.value.trim();
+
+  // ①「いつもの支度」から開いた支度は、そのまま上書き保存する
+  const activeIndex = state.activeTripId ? trips.findIndex((trip) => trip.id === state.activeTripId) : -1;
+  if (activeIndex >= 0) {
+    applyTripData(trips[activeIndex], { name: name || trips[activeIndex].name || "", itemNames, addedItemNames });
+    finalizeSave(trips, addedItemNames);
+    return;
+  }
+
+  // ② 内容が完全一致する既存の支度があれば、それを更新する
   const signature = getTripSignature({
     nights: state.nights,
     destinationKeys: state.destinationKeys,
@@ -1025,32 +1077,83 @@ function saveCurrentTrip() {
     itemNames,
   });
   const existingIndex = trips.findIndex((trip) => getTripSignature(trip) === signature);
-
   if (existingIndex >= 0) {
     trips[existingIndex].usedCount += 1;
-    trips[existingIndex].name = name || trips[existingIndex].name || "";
-    trips[existingIndex].destination = state.destinationKeys[0] || "none";
-    trips[existingIndex].destinationKeys = state.destinationKeys;
-    trips[existingIndex].travelDate = state.travelDate;
-    trips[existingIndex].addedItemHistory = addedItemNames;
-  } else {
-    trips.unshift({
-      name,
-      nights: state.nights,
-      destination: state.destinationKeys[0] || "none",
-      destinationKeys: state.destinationKeys,
-      travelDate: state.travelDate,
-      itemNames,
-      addedItemHistory: addedItemNames,
-      usedCount: 1,
-      savedAt: new Date().toISOString(),
-    });
+    applyTripData(trips[existingIndex], { name: name || trips[existingIndex].name || "", itemNames, addedItemNames });
+    finalizeSave(trips, addedItemNames);
+    return;
   }
 
-  rememberAddedItems(addedItemNames);
-  input.value = "";
-  setSavedTrips(trips.sort((a, b) => b.usedCount - a.usedCount));
-  showScreen("home");
+  // ③ 新規保存。保存枠（3つ）が埋まっていれば入れ替え確認を出す
+  const newTrip = {
+    id: crypto.randomUUID(),
+    name,
+    nights: state.nights,
+    destination: state.destinationKeys[0] || "none",
+    destinationKeys: state.destinationKeys,
+    travelDate: state.travelDate,
+    itemNames,
+    addedItemHistory: addedItemNames,
+    usedCount: 1,
+    savedAt: new Date().toISOString(),
+  };
+
+  if (trips.length >= 3) {
+    openSaveSlotChooser(newTrip);
+    return;
+  }
+
+  trips.unshift(newTrip);
+  finalizeSave(trips, addedItemNames);
+}
+
+function openSaveSlotChooser(newTrip) {
+  const modal = document.querySelector("#saveSlotModal");
+  const optionsEl = document.querySelector("#saveSlotOptions");
+  optionsEl.innerHTML = "";
+
+  getSavedTrips().forEach((trip) => {
+    const info = describeTrip(trip);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "modal-option";
+    const titleText = document.createElement("strong");
+    titleText.textContent = info.title;
+    const detailText = document.createElement("span");
+    detailText.textContent = info.detail;
+    button.append(titleText, detailText);
+    button.addEventListener("click", () => replaceTripSlot(trip.id, newTrip));
+    optionsEl.append(button);
+  });
+
+  modal.hidden = false;
+}
+
+function replaceTripSlot(targetId, newTrip) {
+  const trips = getSavedTrips();
+  const index = trips.findIndex((trip) => trip.id === targetId);
+  if (index >= 0) {
+    trips.splice(index, 1);
+  }
+  trips.unshift(newTrip);
+  closeSaveSlotChooser();
+  finalizeSave(trips, newTrip.addedItemHistory);
+}
+
+function closeSaveSlotChooser() {
+  document.querySelector("#saveSlotModal").hidden = true;
+}
+
+function renderDoneScreen() {
+  const active = state.activeTripId ? getSavedTrips().find((trip) => trip.id === state.activeTripId) : null;
+  const button = document.querySelector("#saveTripButton");
+  const input = document.querySelector("#tripName");
+  if (active) {
+    button.textContent = "この支度を上書き保存する";
+    input.value = active.name || "";
+  } else {
+    button.textContent = "この支度を保存する";
+  }
 }
 
 function getTripSignature(trip) {
@@ -1171,6 +1274,7 @@ document.addEventListener("change", (event) => {
 
 document.querySelector("#buildListButton").addEventListener("click", () => {
   buildItems();
+  state.activeTripId = null;
   state.listBackTarget = "prefs";
   renderChecklist();
   showScreen("list");
@@ -1197,10 +1301,18 @@ document.querySelector("#addForm").addEventListener("submit", (event) => {
 });
 
 document.querySelector("#completeButton").addEventListener("click", () => {
+  renderDoneScreen();
   showScreen("done");
 });
 
 document.querySelector("#saveTripButton").addEventListener("click", saveCurrentTrip);
+document.querySelector("#saveSlotCancel").addEventListener("click", closeSaveSlotChooser);
+document.querySelector("#saveSlotModal").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) {
+    closeSaveSlotChooser();
+  }
+});
 
 renderPreferences();
+migrateSavedTrips();
 renderSavedTrips();
