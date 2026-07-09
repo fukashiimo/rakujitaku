@@ -237,10 +237,23 @@ function renderProgress() {
   const total = state.items.length;
   const checked = state.items.filter((item) => item.checked).length;
   const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
+  const isComplete = total > 0 && checked === total;
 
-  document.querySelector("#progressText").textContent = `${checked} / ${total}`;
+  const progressText = document.querySelector("#progressText");
+  const nextText = `${checked} / ${total}`;
+  if (progressText.textContent !== nextText) {
+    progressText.textContent = nextText;
+    progressText.classList.remove("pop");
+    void progressText.offsetWidth;
+    progressText.classList.add("pop");
+  }
+
   document.querySelector("#progressBar").style.width = `${percent}%`;
-  document.querySelector("#completeButton").disabled = total === 0 || checked !== total;
+  document.querySelector(".progress-box").classList.toggle("is-complete", isComplete);
+
+  const completeButton = document.querySelector("#completeButton");
+  completeButton.disabled = !isComplete;
+  completeButton.classList.toggle("is-ready", isComplete);
 }
 
 function renderSuggestions() {
@@ -672,9 +685,30 @@ document.querySelector("#addForm").addEventListener("submit", (event) => {
   input.focus();
 });
 
+// CLEAR画面にピクセル紙吹雪を降らせる
+function spawnClearConfetti() {
+  const stage = document.querySelector("#doneScreen .clear-stage");
+  if (!stage || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  stage.querySelectorAll(".confetti").forEach((piece) => piece.remove());
+  const colors = ["#f8c86a", "#95d5b2", "#c8ced9", "#ff8a80"];
+  for (let i = 0; i < 28; i += 1) {
+    const piece = document.createElement("span");
+    piece.className = "confetti";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[i % colors.length];
+    piece.style.setProperty("--dx", `${Math.round(Math.random() * 80 - 40)}px`);
+    piece.style.setProperty("--t", `${(1 + Math.random() * 0.9).toFixed(2)}s`);
+    piece.style.setProperty("--wait", `${(Math.random() * 0.6).toFixed(2)}s`);
+    if (i % 2 === 0) piece.style.borderRadius = "50%";
+    stage.append(piece);
+  }
+}
+
 document.querySelector("#completeButton").addEventListener("click", () => {
   renderDoneScreen();
   showScreen("done");
+  spawnClearConfetti();
 });
 
 document.querySelector("#saveTripButton").addEventListener("click", saveCurrentTrip);
