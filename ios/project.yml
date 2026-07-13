@@ -36,8 +36,8 @@ targets:
       path: Rakujitaku/Info.plist
       properties:
         CFBundleDisplayName: らくじたく
-        CFBundleShortVersionString: "1.0.0"
-        CFBundleVersion: "2"
+        CFBundleShortVersionString: "1.0.1"
+        CFBundleVersion: "1"
         ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -46,8 +46,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.shuyafukai.rakujitaku
-        MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "1.0.1"
+        CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5"
         TARGETED_DEVICE_FAMILY: "1"
         DEVELOPMENT_TEAM: B54UXU8NGQ
