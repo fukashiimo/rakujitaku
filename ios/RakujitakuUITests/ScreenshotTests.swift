@@ -17,7 +17,7 @@ final class ScreenshotTests: XCTestCase {
         shoot(app, "02_nights")
 
         app.buttons["2泊"].tap()
-        XCTAssertTrue(app.staticTexts["必要なものを選ぶ"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["持っていくものを選ぶ"].waitForExistence(timeout: 3))
 
         // 洗面カテゴリを増やして見栄えを良くする
         app.buttons["コンタクトを使う"].tap()
@@ -25,7 +25,8 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["持ち物チェック"].waitForExistence(timeout: 3))
 
         // 進捗バーが途中まで進んだ状態にする
-        for name in ["財布", "スマホ", "鍵", "トップス（2日分）", "下着（2日分）", "靴下（2日分）"] {
+        for name in ["財布", "スマホ", "家の鍵",
+                     "トップス（2泊分）", "ボトムス（2泊分）", "靴下（2泊分）"] {
             tapScrollingTo(app.buttons[name], in: app)
         }
         app.swipeDown()  // 先頭（進捗バー）まで戻す
@@ -34,8 +35,9 @@ final class ScreenshotTests: XCTestCase {
         shoot(app, "03_checklist")
 
         // 残りもチェックして完了画面へ
-        for name in ["充電器・ケーブル", "日焼け止め", "コンタクト（2泊分）",
-                     "メガネ（夜用）", "予備コンタクト", "コンタクトケース・洗浄液", "目薬"] {
+        for name in ["インナー（上）（2泊分）", "インナー（下）（2泊分）", "パジャマ",
+                     "歯ブラシ", "日焼け止め", "充電器・ケーブル",
+                     "コンタクト（2泊分）", "コンタクト液（2泊分）", "メガネ"] {
             tapScrollingTo(app.buttons[name], in: app)
         }
         tapScrollingTo(app.buttons["完了"], in: app)

@@ -129,6 +129,10 @@ struct GameStage: View {
             pixel(Theme.accent).offset(x: 70, y: 50).opacity(blink ? 1 : 0.25)
             pixel(Color(red: 0.784, green: 0.808, blue: 0.851)).offset(x: -80, y: 70)
 
+            if mode == .clear {
+                PixelConfetti()
+            }
+
             // ピクセル風バッグ
             HStack(spacing: 0) {
                 Rectangle().fill(Color(red: 0.56, green: 0.42, blue: 0.235)).frame(width: 8, height: 8)
@@ -206,6 +210,68 @@ struct GameStage: View {
             .fill(color)
             .frame(width: 8, height: 8)
             .shadow(color: color.opacity(0.7), radius: 7)
+    }
+}
+
+/// CLEAR画面に降るピクセル紙吹雪（Reduce Motion時は表示しない）
+struct PixelConfetti: View {
+    private struct Piece {
+        let x: CGFloat
+        let color: Color
+        let delay: Double
+        let duration: Double
+        let drift: CGFloat
+        let isRound: Bool
+    }
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var fall = false
+    private let pieces: [Piece]
+
+    init() {
+        let palette: [Color] = [
+            Theme.accent,
+            Theme.accent2,
+            Color(red: 0.784, green: 0.808, blue: 0.851),
+            Theme.danger,
+        ]
+        pieces = (0..<24).map { index in
+            Piece(
+                x: CGFloat.random(in: 0.02...0.98),
+                color: palette[index % palette.count],
+                delay: Double.random(in: 0...0.6),
+                duration: Double.random(in: 1.0...1.9),
+                drift: CGFloat.random(in: -40...40),
+                isRound: index.isMultiple(of: 2)
+            )
+        }
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                ForEach(pieces.indices, id: \.self) { index in
+                    let piece = pieces[index]
+                    RoundedRectangle(cornerRadius: piece.isRound ? 3.5 : 1)
+                        .fill(piece.color)
+                        .frame(width: 7, height: 7)
+                        .rotationEffect(.degrees(fall ? 560 : 0))
+                        .position(
+                            x: piece.x * geometry.size.width + (fall ? piece.drift : 0),
+                            y: fall ? geometry.size.height + 12 : -12
+                        )
+                        .opacity(fall ? 0.85 : 1)
+                        .animation(.easeIn(duration: piece.duration).delay(piece.delay), value: fall)
+                }
+            }
+            .clipped()
+        }
+        .allowsHitTesting(false)
+        .onAppear {
+            if !reduceMotion {
+                fall = true
+            }
+        }
     }
 }
 

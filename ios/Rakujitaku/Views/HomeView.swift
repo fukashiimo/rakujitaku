@@ -59,10 +59,10 @@ struct HomeView: View {
                                 store.useSavedTrip(trip)
                             } label: {
                                 VStack(alignment: .leading, spacing: 10) {
-                                    Text("\(trip.nights)泊の支度")
+                                    Text(trip.title)
                                         .font(.body.weight(.bold))
                                         .foregroundStyle(Theme.text)
-                                    Text("\(trip.itemNames.count)個の持ち物 · \(trip.usedCount)回使用")
+                                    Text(trip.detail)
                                         .font(.subheadline)
                                         .foregroundStyle(Theme.soft)
                                 }

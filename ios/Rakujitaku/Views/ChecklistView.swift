@@ -15,7 +15,7 @@ struct ChecklistView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Eyebrow(text: "CHECKLIST")
                     ScreenTitle(text: "持ち物チェック")
-                    Text("\(store.nights)泊の支度")
+                    Text("\(store.nightsLabel)の支度")
                         .foregroundStyle(Theme.muted)
                 }
 
@@ -31,25 +31,11 @@ struct ChecklistView: View {
                 addForm
 
                 if !store.availableSuggestions.isEmpty {
-                    FlowLayout(spacing: 8) {
-                        ForEach(store.availableSuggestions, id: \.self) { name in
-                            Button {
-                                store.addItem(named: name)
-                            } label: {
-                                Text("＋ \(name)")
-                                    .font(.subheadline)
-                                    .foregroundStyle(Theme.muted)
-                                    .padding(.horizontal, 12)
-                                    .frame(minHeight: 38)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: Theme.radius)
-                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                    )
-                            }
-                        }
-                    }
-                    .padding(.vertical, 6)
+                    suggestionChips(store.availableSuggestions)
+                        .padding(.vertical, 6)
                 }
+
+                itemHistorySection
 
                 PrimaryButton(title: "完了", disabled: !store.isComplete) {
                     store.complete()
@@ -181,6 +167,44 @@ struct ChecklistView: View {
             }
         }
         .padding(.top, 6)
+    }
+
+    private func suggestionChips(_ names: [String]) -> some View {
+        FlowLayout(spacing: 8) {
+            ForEach(names, id: \.self) { name in
+                Button {
+                    store.addItem(named: name)
+                } label: {
+                    Text("＋ \(name)")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.muted)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 38)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Theme.radius)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                }
+            }
+        }
+    }
+
+    private var itemHistorySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("過去に追加した持ち物")
+                .font(.body.weight(.bold))
+                .foregroundStyle(Theme.muted)
+
+            if store.availableHistory.isEmpty {
+                Text("保存後に追加履歴が表示されます。")
+                    .foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .panelStyle()
+            } else {
+                suggestionChips(store.availableHistory)
+            }
+        }
     }
 
     private func addNewItem() {

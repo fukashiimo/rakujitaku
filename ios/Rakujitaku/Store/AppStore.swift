@@ -8,58 +8,85 @@ enum Screen {
 final class AppStore: ObservableObject {
     private static let preferencesKey = "rakujitaku_preferences"
     private static let savedTripsKey = "rakujitaku_saved_trips"
+    private static let itemHistoryKey = "rakujitaku_added_item_history"
     private static let maxSavedTrips = 3
+    private static let maxItemHistory = 20
 
     @Published var screen: Screen = .home
     @Published var nights = 1
     @Published var items: [PackingItem] = []
     @Published var savedTrips: [SavedTrip] = []
+    @Published var itemHistory: [String] = []
+    @Published var tripName = ""
+    /// 保存枠が満杯のとき、入れ替え先の選択待ちになっている新規支度
+    @Published var pendingSaveTrip: SavedTrip?
     @Published var preferences = Preferences() {
         didSet { savePreferences() }
     }
 
     var removedSuggestions: [String] = []
     var listBackTarget: Screen = .prefs
+    /// 「いつもの支度」から開いた場合の上書き保存先
+    var activeTripId: UUID?
 
     init() {
         preferences = loadPreferences()
         savedTrips = loadSavedTrips()
+        itemHistory = loadItemHistory()
     }
 
-    // MARK: - チェックリスト生成
+    // MARK: - チェックリスト生成（持ち物生成仕様に準拠、天気条件は含まない）
 
     func buildItems() {
-        var built: [PackingItem] = [
-            PackingItem(name: "財布", category: .valuables),
-            PackingItem(name: "スマホ", category: .valuables),
-            PackingItem(name: "鍵", category: .valuables),
-            PackingItem(name: "トップス（\(nights)日分）", category: .clothes),
-            PackingItem(name: "下着（\(nights)日分）", category: .clothes),
-            PackingItem(name: "靴下（\(nights)日分）", category: .clothes),
-            PackingItem(name: "充電器・ケーブル", category: .others),
-            PackingItem(name: "日焼け止め", category: .others),
-        ]
+        var built: [PackingItem] = []
 
+        // ① 常に表示する（デフォルト）
+        // 貴重品
+        append(&built, name: "財布", category: .valuables)
+        append(&built, name: "スマホ", category: .valuables)
+        append(&built, name: "家の鍵", category: .valuables)
+
+        // 衣類（泊数に応じて自動生成。日帰りは無し）
+        if nights > 0 {
+            append(&built, name: "トップス（\(nights)泊分）", category: .clothes)
+            append(&built, name: "ボトムス（\(nights)泊分）", category: .clothes)
+            append(&built, name: "インナー（上）（\(nights)泊分）", category: .clothes)
+            append(&built, name: "インナー（下）（\(nights)泊分）", category: .clothes)
+            append(&built, name: "靴下（\(nights)泊分）", category: .clothes)
+            append(&built, name: "パジャマ", category: .clothes) // 1泊以上なら1着
+        }
+
+        // 洗面
+        append(&built, name: "歯ブラシ", category: .toiletries)
+
+        // その他
+        append(&built, name: "日焼け止め", category: .others)
+        if nights > 0 {
+            append(&built, name: "充電器・ケーブル", category: .others) // 1泊以上のみ
+        } else {
+            append(&built, name: "モバイルバッテリー", category: .others) // 日帰りのみ
+        }
+
+        // ② 初回設定による条件付き表示
+        let nightsSuffix = nights > 0 ? "（\(nights)泊分）" : ""
         if preferences.contacts {
-            append(&built, name: "コンタクト（\(nights)泊分）", category: .toiletries)
+            append(&built, name: "コンタクト\(nightsSuffix)", category: .toiletries)
+            append(&built, name: "コンタクト液\(nightsSuffix)", category: .toiletries)
+            append(&built, name: "メガネ", category: .toiletries)
         }
         if preferences.makeup {
             append(&built, name: "メイク用品", category: .toiletries)
+            if nights > 0 {
+                append(&built, name: "メイク落とし（\(nights)泊分）", category: .toiletries) // 1泊以上のみ
+            }
         }
         if preferences.skincare {
-            append(&built, name: "スキンケア（\(nights)泊分）", category: .toiletries)
+            let times = nights * 2 // 泊数 × 2（朝晩）
+            let label = times > 0 ? "スキンケア用品（朝晩\(times)回分）" : "スキンケア用品"
+            append(&built, name: label, category: .toiletries)
         }
         if preferences.hairIron {
             append(&built, name: "ヘアアイロン", category: .toiletries)
-        }
-        if preferences.medicine {
-            append(&built, name: "常備薬", category: .others)
-        }
-
-        for group in companionItems where preferences[keyPath: group.keyPath] {
-            for item in group.items {
-                append(&built, name: item.name, category: item.category)
-            }
         }
 
         items = built
@@ -86,6 +113,10 @@ final class AppStore: ObservableObject {
 
     var isComplete: Bool {
         !items.isEmpty && checkedCount == items.count
+    }
+
+    var nightsLabel: String {
+        nights == 0 ? "日帰り" : "\(nights)泊"
     }
 
     func toggle(_ item: PackingItem) {
@@ -117,6 +148,12 @@ final class AppStore: ObservableObject {
         }
     }
 
+    /// 過去に追加した持ち物のうち、まだリストに入っていないもの
+    var availableHistory: [String] {
+        let existing = Set(items.map { normalizeItemName($0.name) })
+        return itemHistory.filter { !existing.contains(normalizeItemName($0)) }
+    }
+
     // MARK: - 画面遷移
 
     func startPacking() {
@@ -130,6 +167,7 @@ final class AppStore: ObservableObject {
 
     func showChecklist() {
         buildItems()
+        activeTripId = nil
         listBackTarget = .prefs
         screen = .list
     }
@@ -139,6 +177,7 @@ final class AppStore: ObservableObject {
     }
 
     func complete() {
+        tripName = activeTrip?.name ?? ""
         screen = .done
     }
 
@@ -148,6 +187,13 @@ final class AppStore: ObservableObject {
 
     // MARK: - いつもの支度
 
+    var activeTrip: SavedTrip? {
+        guard let activeTripId else { return nil }
+        return savedTrips.first { $0.id == activeTripId }
+    }
+
+    var isOverwriting: Bool { activeTrip != nil }
+
     func useSavedTrip(_ trip: SavedTrip) {
         guard let index = savedTrips.firstIndex(where: { $0.id == trip.id }) else { return }
         savedTrips[index].usedCount += 1
@@ -155,8 +201,9 @@ final class AppStore: ObservableObject {
         savedTrips = ([updated] + savedTrips).sorted { $0.usedCount > $1.usedCount }
         persistSavedTrips()
 
+        activeTripId = updated.id
         nights = updated.nights
-        items = updated.itemNames.map { PackingItem(name: $0, category: inferCategory(for: normalizeItemName($0))) }
+        items = updated.itemNames.map { PackingItem(name: $0, category: inferCategory(for: $0)) }
         removedSuggestions = []
         listBackTarget = .home
         screen = .list
@@ -164,20 +211,81 @@ final class AppStore: ObservableObject {
 
     func saveCurrentTrip() {
         let itemNames = items.map(\.name)
-        let signature = "\(nights):" + itemNames.joined(separator: "|")
+        let addedItemNames = items.filter { $0.category == .extra }.map(\.name)
+        let name = tripName.trimmingCharacters(in: .whitespaces)
 
-        if let index = savedTrips.firstIndex(where: { $0.signature == signature }) {
-            savedTrips[index].usedCount += 1
-        } else {
-            savedTrips.insert(
-                SavedTrip(nights: nights, itemNames: itemNames, usedCount: 1, savedAt: .now),
-                at: 0
-            )
+        // ①「いつもの支度」から開いた支度は、そのまま上書き保存する
+        if let activeTripId, let index = savedTrips.firstIndex(where: { $0.id == activeTripId }) {
+            apply(to: &savedTrips[index], name: name, itemNames: itemNames, addedItemNames: addedItemNames)
+            finalizeSave(addedItemNames: addedItemNames)
+            return
         }
 
+        // ② 内容が完全一致する既存の支度があれば、それを更新する
+        let signature = "\(nights):" + itemNames.joined(separator: "|")
+        if let index = savedTrips.firstIndex(where: { $0.signature == signature }) {
+            savedTrips[index].usedCount += 1
+            apply(to: &savedTrips[index], name: name, itemNames: itemNames, addedItemNames: addedItemNames)
+            finalizeSave(addedItemNames: addedItemNames)
+            return
+        }
+
+        // ③ 新規保存。保存枠（3つ）が埋まっていれば入れ替え確認を出す
+        let newTrip = SavedTrip(
+            name: name,
+            nights: nights,
+            itemNames: itemNames,
+            addedItemHistory: addedItemNames,
+            usedCount: 1,
+            savedAt: .now
+        )
+
+        if savedTrips.count >= Self.maxSavedTrips {
+            pendingSaveTrip = newTrip
+            return
+        }
+
+        savedTrips.insert(newTrip, at: 0)
+        finalizeSave(addedItemNames: addedItemNames)
+    }
+
+    func replaceTrip(with targetId: UUID) {
+        guard let newTrip = pendingSaveTrip else { return }
+        savedTrips.removeAll { $0.id == targetId }
+        savedTrips.insert(newTrip, at: 0)
+        pendingSaveTrip = nil
+        finalizeSave(addedItemNames: newTrip.addedItemHistory)
+    }
+
+    func cancelSlotChooser() {
+        pendingSaveTrip = nil
+    }
+
+    private func apply(to trip: inout SavedTrip, name: String, itemNames: [String], addedItemNames: [String]) {
+        trip.name = name.isEmpty ? trip.name : name
+        trip.nights = nights
+        trip.itemNames = itemNames
+        trip.addedItemHistory = addedItemNames
+    }
+
+    private func finalizeSave(addedItemNames: [String]) {
+        rememberAddedItems(addedItemNames)
+        tripName = ""
+        activeTripId = nil
         savedTrips.sort { $0.usedCount > $1.usedCount }
         persistSavedTrips()
         screen = .home
+    }
+
+    // MARK: - 追加履歴
+
+    private func rememberAddedItems(_ names: [String]) {
+        let merged = (names + itemHistory)
+            .map(normalizeItemName)
+            .filter { !$0.isEmpty }
+        var seen = Set<String>()
+        itemHistory = Array(merged.filter { seen.insert($0).inserted }.prefix(Self.maxItemHistory))
+        persistItemHistory()
     }
 
     // MARK: - 永続化
@@ -205,5 +313,13 @@ final class AppStore: ObservableObject {
         savedTrips = Array(savedTrips.prefix(Self.maxSavedTrips))
         guard let data = try? JSONEncoder().encode(savedTrips) else { return }
         UserDefaults.standard.set(data, forKey: Self.savedTripsKey)
+    }
+
+    private func loadItemHistory() -> [String] {
+        UserDefaults.standard.stringArray(forKey: Self.itemHistoryKey) ?? []
+    }
+
+    private func persistItemHistory() {
+        UserDefaults.standard.set(itemHistory, forKey: Self.itemHistoryKey)
     }
 }

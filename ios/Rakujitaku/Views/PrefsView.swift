@@ -12,7 +12,7 @@ struct PrefsView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Eyebrow(text: "STEP 2")
-                    ScreenTitle(text: "必要なものを選ぶ")
+                    ScreenTitle(text: "持っていくものを選ぶ")
                     Text("この質問は初回だけ。次からは同じ設定を使えます。")
                         .foregroundStyle(Theme.muted)
                 }

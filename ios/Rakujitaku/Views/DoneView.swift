@@ -17,7 +17,8 @@ struct DoneView: View {
 
                 VStack(spacing: 14) {
                     GameStage(mode: .clear)
-                    PrimaryButton(title: "この支度を保存する") {
+                    saveNameField
+                    PrimaryButton(title: store.isOverwriting ? "この支度を上書き保存する" : "この支度を保存する") {
                         store.saveCurrentTrip()
                     }
                     SecondaryButton(title: "ホームへ戻る") {
@@ -44,6 +45,45 @@ struct DoneView: View {
             .padding(.bottom, 40)
         }
         .task { await tipJar.load() }
+        .confirmationDialog(
+            "保存できるのは3つまで",
+            isPresented: Binding(
+                get: { store.pendingSaveTrip != nil },
+                set: { if !$0 { store.cancelSlotChooser() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            ForEach(store.savedTrips) { trip in
+                Button("\(trip.title)（\(trip.detail)）") {
+                    store.replaceTrip(with: trip.id)
+                }
+            }
+            Button("やめる", role: .cancel) {
+                store.cancelSlotChooser()
+            }
+        } message: {
+            Text("入れ替える支度を選ぶと、その支度が今の内容に置き換わります。")
+        }
+    }
+
+    private var saveNameField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("保存名")
+                .font(.body.weight(.bold))
+                .foregroundStyle(Theme.muted)
+            TextField("例：夏の帰省、旅行セット", text: $store.tripName)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 48)
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.radius)
+                        .fill(Color(red: 0.063, green: 0.063, blue: 0.063))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.radius)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
