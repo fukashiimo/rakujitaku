@@ -420,6 +420,7 @@ function inferCategory(name) {
     "財布",
     "スマホ",
     "鍵",
+    "家の鍵",
     "航空券・予約確認",
     "身分証",
     "乗車券・ICカード",
@@ -454,6 +455,7 @@ function inferCategory(name) {
   if (
     name.includes("トップス") ||
     name.includes("ボトムス") ||
+    name.includes("インナー") ||
     name.includes("パジャマ") ||
     name.includes("下着") ||
     name.includes("靴下") ||
@@ -464,6 +466,7 @@ function inferCategory(name) {
     return "衣類";
   }
   if (
+    name.includes("歯ブラシ") ||
     name.includes("コンタクト") ||
     name.includes("メガネ") ||
     name.includes("目薬") ||
