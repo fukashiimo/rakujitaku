@@ -40,6 +40,22 @@ Web版のゲーム風デザイン（黒背景+アンバーのピクセル+バッ
 3. Organizer → Distribute App → App Store Connect → Upload
 4. App Store Connectでビルドを選択して審査に提出
 
+#### 新仕様（1.0.0 build 2）の再提出メモ（2026-07-13）
+
+- ビルド番号は `1` → `2` に更新済み（`project.yml` / pbxproj）。バージョンは `1.0.0` のまま
+- **build 2 のアーカイブは作成済み**。Xcode Organizer の場所に置いてあるので、
+  そのままアップロードできる:
+  `~/Library/Developer/Xcode/Archives/2026-07-13/らくじたく 1.0.0 (2) 20-51.xcarchive`
+- 手順: Xcode → Window → Organizer → Archives → 上記アーカイブを選択 →
+  「Distribute App」→ App Store Connect → Upload（自動署名で配布用に再署名される）
+- CLIからのアップロードは配布用証明書とApp Store Connect APIキー（または
+  app-specific password）が必要。この端末には配布証明書もAPIキームも無いため、
+  Organizerからの手動アップロードが最短。
+  ※ APIキーを作れば以後CLIで完結できる（App Store Connect → ユーザーとアクセス →
+    Integrations → App Store Connect API → キー生成 → `~/.appstoreconnect/private_keys/` に配置）
+- アップロード後、App Store Connect でビルド 2 を選択し、
+  「このバージョンの新機能」を記入して審査提出
+
 ## 審査の注意点
 
 - シンプルなアプリなので「最小機能（4.2）」を指摘されないよう、
