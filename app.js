@@ -107,6 +107,7 @@ function showScreen(name) {
 
   if (name === "home") {
     renderSavedTrips();
+    renderDraftCard();
   }
 }
 
@@ -231,6 +232,7 @@ function renderChecklist() {
   renderProgress();
   renderSuggestions();
   renderItemHistory();
+  saveDraft();
 }
 
 function renderProgress() {
@@ -339,6 +341,88 @@ function toggleItem(itemId) {
 
   item.checked = !item.checked;
   renderChecklist();
+}
+
+// ===== 途中保存（自動で続きから再開）=====
+function saveDraft() {
+  if (!state.items.length) return;
+  const draft = {
+    nights: state.nights,
+    items: state.items,
+    activeTripId: state.activeTripId,
+    listBackTarget: state.listBackTarget,
+    updatedAt: Date.now(),
+  };
+  localStorage.setItem("rakujitaku_draft", JSON.stringify(draft));
+}
+
+function loadDraft() {
+  try {
+    const draft = JSON.parse(localStorage.getItem("rakujitaku_draft"));
+    if (draft && Array.isArray(draft.items) && draft.items.length) return draft;
+  } catch (error) {
+    localStorage.removeItem("rakujitaku_draft");
+  }
+  return null;
+}
+
+function clearDraft() {
+  localStorage.removeItem("rakujitaku_draft");
+}
+
+function resumeDraft() {
+  const draft = loadDraft();
+  if (!draft) return;
+  state.nights = draft.nights;
+  state.items = draft.items.map((item) => ({
+    id: item.id || crypto.randomUUID(),
+    name: item.name,
+    category: item.category,
+    count: item.count ?? null,
+    checked: !!item.checked,
+  }));
+  state.activeTripId = draft.activeTripId || null;
+  state.listBackTarget = draft.listBackTarget || "home";
+  renderChecklist();
+  showScreen("list");
+}
+
+function renderDraftCard() {
+  const target = document.querySelector("#draftResume");
+  if (!target) return;
+
+  const draft = loadDraft();
+  target.innerHTML = "";
+  if (!draft) {
+    target.hidden = true;
+    return;
+  }
+  target.hidden = false;
+
+  const checked = draft.items.filter((item) => item.checked).length;
+  const total = draft.items.length;
+  const nightsLabel = draft.nights === 0 ? "日帰り" : `${draft.nights}泊`;
+
+  const main = document.createElement("button");
+  main.type = "button";
+  main.className = "draft-main";
+  main.innerHTML =
+    `<span class="draft-tag">支度の途中</span>` +
+    `<strong>${nightsLabel}の支度</strong>` +
+    `<span class="draft-detail">${checked} / ${total} 準備済み</span>`;
+  main.addEventListener("click", resumeDraft);
+
+  const dismiss = document.createElement("button");
+  dismiss.type = "button";
+  dismiss.className = "draft-dismiss";
+  dismiss.textContent = "×";
+  dismiss.setAttribute("aria-label", "途中の支度を削除");
+  dismiss.addEventListener("click", () => {
+    clearDraft();
+    renderDraftCard();
+  });
+
+  target.append(main, dismiss);
 }
 
 function getSavedTrips() {
@@ -709,6 +793,7 @@ function spawnClearConfetti() {
 }
 
 document.querySelector("#completeButton").addEventListener("click", () => {
+  clearDraft();
   renderDoneScreen();
   showScreen("done");
   spawnClearConfetti();
@@ -722,6 +807,25 @@ document.querySelector("#saveSlotModal").addEventListener("click", (event) => {
   }
 });
 
+// スクロールで上部に固定されたプログレスバーに影を付ける（若干の動き）
+function setupStickyProgress() {
+  const box = document.querySelector(".progress-box");
+  if (!box) return;
+  const update = () => {
+    // 非表示中は無視。スクロール位置がバーの本来位置(top:10px分手前)を超えたら固定中
+    if (box.offsetParent === null) {
+      box.classList.remove("is-stuck");
+      return;
+    }
+    box.classList.toggle("is-stuck", window.scrollY >= box.offsetTop - 10);
+  };
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update, { passive: true });
+  update();
+}
+
 renderPreferences();
 migrateSavedTrips();
 renderSavedTrips();
+renderDraftCard();
+setupStickyProgress();

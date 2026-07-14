@@ -338,6 +338,73 @@ h2 {
   color: var(--muted);
 }
 
+.draft-resume {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.draft-resume[hidden] {
+  display: none;
+}
+
+.draft-main {
+  flex: 1;
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  text-align: left;
+  border: 1px solid rgba(248, 200, 106, 0.4);
+  border-radius: var(--radius);
+  background: rgba(248, 200, 106, 0.08);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 160ms ease, box-shadow 200ms ease, background 200ms ease;
+}
+
+.draft-main:hover {
+  transform: translateY(-2px);
+  border-color: rgba(248, 200, 106, 0.65);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.draft-main:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.draft-tag {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.draft-main strong {
+  color: var(--text);
+}
+
+.draft-detail {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.draft-dismiss {
+  flex: none;
+  width: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--soft);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.draft-dismiss:hover {
+  color: var(--danger);
+  border-color: rgba(255, 138, 128, 0.4);
+}
+
 .section-block {
   margin-top: 30px;
 }
@@ -509,6 +576,16 @@ h2 {
   background: rgba(16, 24, 20, 0.94);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(10px);
+  transition: box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
+}
+
+/* スクロールで上部に固定されたときの浮き上がり演出 */
+.progress-box.is-stuck {
+  transform: scale(1.01);
+  border-color: rgba(149, 213, 178, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(149, 213, 178, 0.25),
+    0 16px 34px rgba(0, 0, 0, 0.5);
 }
 
 .progress-box div:first-child {
