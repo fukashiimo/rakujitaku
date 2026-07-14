@@ -8,19 +8,6 @@ struct ChecklistView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                BackButton {
-                    store.goBackFromList()
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Eyebrow(text: "CHECKLIST")
-                    ScreenTitle(text: "持ち物チェック")
-                    Text("\(store.nightsLabel)の支度")
-                        .foregroundStyle(Theme.muted)
-                }
-
-                progressBox
-
                 ForEach(ItemCategory.allCases, id: \.self) { category in
                     let categoryItems = store.items(in: category)
                     if !categoryItems.isEmpty {
@@ -46,6 +33,33 @@ struct ChecklistView: View {
             .padding(.bottom, 40)
         }
         .scrollDismissesKeyboard(.interactively)
+        // スクロールしても上部で固定されるヘッダー（プログレスバーを含む）
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                BackButton {
+                    store.goBackFromList()
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Eyebrow(text: "CHECKLIST")
+                    ScreenTitle(text: "持ち物チェック")
+                    Text("\(store.nightsLabel)の支度")
+                        .foregroundStyle(Theme.muted)
+                }
+
+                progressBox
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
+            .padding(.bottom, 12)
+            .background(Theme.bg)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Theme.accent2.opacity(0.22))
+                    .frame(height: 1)
+            }
+            .shadow(color: .black.opacity(0.4), radius: 8, y: 5)
+        }
     }
 
     private var progressBox: some View {

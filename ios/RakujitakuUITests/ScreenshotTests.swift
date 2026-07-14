@@ -5,6 +5,7 @@ import XCTest
 final class ScreenshotTests: XCTestCase {
     func testCaptureAppStoreScreens() throws {
         let app = XCUIApplication()
+        app.launchArguments = ["-uitest-reset"]
         app.launch()
 
         // 1. ホーム画面
@@ -56,8 +57,11 @@ final class ScreenshotTests: XCTestCase {
 
     private func tapScrollingTo(_ element: XCUIElement, in app: XCUIApplication) {
         var attempts = 0
-        while !element.isHittable, attempts < 8 {
-            app.swipeUp()
+        // 上部固定ヘッダーの下に隠れないよう、小さく細かくスクロールして可視域に収める
+        while !element.isHittable, attempts < 25 {
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.57))
+            start.press(forDuration: 0.01, thenDragTo: end)
             attempts += 1
         }
         element.tap()

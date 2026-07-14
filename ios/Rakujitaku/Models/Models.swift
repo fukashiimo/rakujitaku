@@ -8,11 +8,20 @@ enum ItemCategory: String, Codable, CaseIterable {
     case extra = "追加"
 }
 
-struct PackingItem: Identifiable, Equatable {
-    let id = UUID()
+struct PackingItem: Identifiable, Equatable, Codable {
+    var id = UUID()
     var name: String
     var category: ItemCategory
     var checked = false
+}
+
+/// 途中保存（自動で続きから再開）用の下書き
+struct PackingDraft: Codable, Equatable {
+    var nights: Int
+    var items: [PackingItem]
+    var activeTripId: UUID?
+
+    var checkedCount: Int { items.filter(\.checked).count }
 }
 
 struct Preferences: Codable, Equatable {

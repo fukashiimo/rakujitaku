@@ -9,6 +9,7 @@ final class AppStore: ObservableObject {
     private static let preferencesKey = "rakujitaku_preferences"
     private static let savedTripsKey = "rakujitaku_saved_trips"
     private static let itemHistoryKey = "rakujitaku_added_item_history"
+    private static let draftKey = "rakujitaku_draft"
     private static let maxSavedTrips = 3
     private static let maxItemHistory = 20
 
@@ -17,6 +18,8 @@ final class AppStore: ObservableObject {
     @Published var items: [PackingItem] = []
     @Published var savedTrips: [SavedTrip] = []
     @Published var itemHistory: [String] = []
+    /// 途中保存された支度（あればホームに「支度の途中」カードを出す）
+    @Published var draft: PackingDraft?
     @Published var tripName = ""
     /// 保存枠が満杯のとき、入れ替え先の選択待ちになっている新規支度
     @Published var pendingSaveTrip: SavedTrip?
@@ -30,9 +33,16 @@ final class AppStore: ObservableObject {
     var activeTripId: UUID?
 
     init() {
+        // UIテスト時は保存状態をリセットして決定的に実行する
+        if ProcessInfo.processInfo.arguments.contains("-uitest-reset") {
+            let defaults = UserDefaults.standard
+            [Self.preferencesKey, Self.savedTripsKey, Self.itemHistoryKey, Self.draftKey]
+                .forEach { defaults.removeObject(forKey: $0) }
+        }
         preferences = loadPreferences()
         savedTrips = loadSavedTrips()
         itemHistory = loadItemHistory()
+        draft = loadDraft()
     }
 
     // MARK: - チェックリスト生成（持ち物生成仕様に準拠、天気条件は含まない）
@@ -122,11 +132,13 @@ final class AppStore: ObservableObject {
     func toggle(_ item: PackingItem) {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
         items[index].checked.toggle()
+        saveDraft()
     }
 
     func delete(_ item: PackingItem) {
         removedSuggestions.append(normalizeItemName(item.name))
         items.removeAll { $0.id == item.id }
+        saveDraft()
     }
 
     func addItem(named name: String) {
@@ -136,6 +148,7 @@ final class AppStore: ObservableObject {
         let sameCount = items.filter { normalizeItemName($0.name) == cleanName }.count
         let displayName = sameCount > 0 ? "\(cleanName)（その\(sameCount + 1)）" : cleanName
         items.append(PackingItem(name: displayName, category: .extra))
+        saveDraft()
     }
 
     var availableSuggestions: [String] {
@@ -169,6 +182,7 @@ final class AppStore: ObservableObject {
         buildItems()
         activeTripId = nil
         listBackTarget = .prefs
+        saveDraft()
         screen = .list
     }
 
@@ -178,6 +192,7 @@ final class AppStore: ObservableObject {
 
     func complete() {
         tripName = activeTrip?.name ?? ""
+        clearDraft()
         screen = .done
     }
 
@@ -206,7 +221,44 @@ final class AppStore: ObservableObject {
         items = updated.itemNames.map { PackingItem(name: $0, category: inferCategory(for: $0)) }
         removedSuggestions = []
         listBackTarget = .home
+        saveDraft()
         screen = .list
+    }
+
+    // MARK: - 途中保存（自動で続きから再開）
+
+    func saveDraft() {
+        guard !items.isEmpty else {
+            clearDraft()
+            return
+        }
+        draft = PackingDraft(nights: nights, items: items, activeTripId: activeTripId)
+        if let data = try? JSONEncoder().encode(draft) {
+            UserDefaults.standard.set(data, forKey: Self.draftKey)
+        }
+    }
+
+    func clearDraft() {
+        draft = nil
+        UserDefaults.standard.removeObject(forKey: Self.draftKey)
+    }
+
+    func resumeDraft() {
+        guard let draft else { return }
+        nights = draft.nights
+        items = draft.items
+        activeTripId = draft.activeTripId
+        removedSuggestions = []
+        listBackTarget = .home
+        screen = .list
+    }
+
+    private func loadDraft() -> PackingDraft? {
+        guard let data = UserDefaults.standard.data(forKey: Self.draftKey),
+              let stored = try? JSONDecoder().decode(PackingDraft.self, from: data),
+              !stored.items.isEmpty
+        else { return nil }
+        return stored
     }
 
     func saveCurrentTrip() {
