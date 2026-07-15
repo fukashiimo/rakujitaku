@@ -358,7 +358,8 @@ function buildItems() {
   state.items = items;
   state.itemBags = {};
   state.buyThere = [];
-  state.listView = "category";
+  // カバンを選んでいれば、振り分けやすいカバン別ビューを既定にする
+  state.listView = state.bags.length ? "bag" : "category";
   state.removedSuggestions = [];
 }
 
@@ -379,35 +380,19 @@ function renderPreferences() {
   renderBagOptions();
 }
 
-function itemRowElement(item) {
+function itemRowElement(item, draggable = false) {
   const row = document.createElement("div");
-  row.className = `item-row${item.checked ? " is-checked" : ""}${state.bags.length ? " has-bag" : ""}`;
+  row.className = `item-row${item.checked ? " is-checked" : ""}${draggable ? " is-draggable" : ""}`;
+  row.dataset.itemId = item.id;
+  const handle = draggable
+    ? `<button class="drag-handle" type="button" aria-label="${item.name}をドラッグして別のカバンへ" data-drag="${item.id}">⠿</button>`
+    : "";
   row.innerHTML = `
     <input type="checkbox" id="${item.id}" ${item.checked ? "checked" : ""} data-item="${item.id}" />
     <label for="${item.id}">${item.name}</label>
+    ${handle}
     <button class="delete-button" type="button" aria-label="${item.name}を削除" data-delete="${item.id}">×</button>
   `;
-
-  // カバンを選んでいれば、行に振り分け用セレクトを付ける
-  if (state.bags.length) {
-    const select = document.createElement("select");
-    select.className = "bag-assign";
-    select.dataset.assign = item.id;
-    select.setAttribute("aria-label", `${item.name}のカバン`);
-    const options = [{ key: "", label: "未割り当て" }].concat(
-      state.bags.map((key) => ({ key, label: getBag(key) ? getBag(key).label : key }))
-    );
-    const current = state.itemBags[item.id] || "";
-    options.forEach((option) => {
-      const el = document.createElement("option");
-      el.value = option.key;
-      el.textContent = option.label;
-      if (option.key === current) el.selected = true;
-      select.append(el);
-    });
-    row.append(select);
-  }
-
   return row;
 }
 
@@ -427,19 +412,100 @@ function renderCategoryView(target) {
 
 function renderBagView(target) {
   const groups = state.bags
-    .map((key) => ({ label: `${getBag(key) ? getBag(key).emoji : ""} ${getBag(key) ? getBag(key).label : key}`.trim(), match: (item) => state.itemBags[item.id] === key }))
-    .concat([{ label: "未割り当て", match: (item) => !state.itemBags[item.id] }]);
+    .map((key) => ({
+      key,
+      label: `${getBag(key) ? getBag(key).emoji : ""} ${getBag(key) ? getBag(key).label : key}`.trim(),
+      match: (item) => state.itemBags[item.id] === key,
+    }))
+    .concat([{ key: "", label: "未割り当て", match: (item) => !state.itemBags[item.id] }]);
+
+  const hint = document.createElement("p");
+  hint.className = "bag-drag-hint";
+  hint.textContent = "⠿ をつまんで、持ち物を別のカバンへドラッグできます。";
+  target.append(hint);
 
   groups.forEach((group) => {
     const groupItems = state.items.filter(group.match);
-    if (groupItems.length === 0) return;
 
     const block = document.createElement("section");
-    block.className = "category";
+    block.className = "category bag-group";
+    block.dataset.bagKey = group.key;
     block.innerHTML = `<h2>${group.label}<span class="cat-count">${groupItems.length}</span></h2>`;
-    groupItems.forEach((item) => block.append(itemRowElement(item)));
+    if (groupItems.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "bag-empty";
+      empty.textContent = "ここにドラッグ";
+      block.append(empty);
+    } else {
+      groupItems.forEach((item) => block.append(itemRowElement(item, true)));
+    }
     target.append(block);
   });
+}
+
+// ===== カバンへのドラッグ移動（タッチ対応） =====
+let bagDrag = null;
+
+function bagGroupUnderPoint(x, y) {
+  const el = document.elementFromPoint(x, y);
+  return el ? el.closest(".bag-group") : null;
+}
+
+function onBagDragStart(event) {
+  const handle = event.target.closest(".drag-handle");
+  if (!handle) return;
+  event.preventDefault();
+
+  const row = handle.closest(".item-row");
+  const rect = row.getBoundingClientRect();
+  const clone = row.cloneNode(true);
+  clone.classList.add("drag-clone");
+  clone.style.width = `${rect.width}px`;
+  clone.style.left = `${rect.left}px`;
+  clone.style.top = `${rect.top}px`;
+  document.body.append(clone);
+  row.classList.add("is-dragging-source");
+
+  bagDrag = {
+    itemId: handle.dataset.drag,
+    clone,
+    offsetX: event.clientX - rect.left,
+    offsetY: event.clientY - rect.top,
+  };
+
+  window.addEventListener("pointermove", onBagDragMove);
+  window.addEventListener("pointerup", onBagDragEnd);
+  window.addEventListener("pointercancel", onBagDragEnd);
+}
+
+function onBagDragMove(event) {
+  if (!bagDrag) return;
+  bagDrag.clone.style.left = `${event.clientX - bagDrag.offsetX}px`;
+  bagDrag.clone.style.top = `${event.clientY - bagDrag.offsetY}px`;
+  const group = bagGroupUnderPoint(event.clientX, event.clientY);
+  document.querySelectorAll(".bag-group").forEach((el) => el.classList.toggle("is-drop-target", el === group));
+}
+
+function onBagDragEnd(event) {
+  if (!bagDrag) return;
+  const group = bagGroupUnderPoint(event.clientX, event.clientY);
+  window.removeEventListener("pointermove", onBagDragMove);
+  window.removeEventListener("pointerup", onBagDragEnd);
+  window.removeEventListener("pointercancel", onBagDragEnd);
+  bagDrag.clone.remove();
+  document.querySelectorAll(".bag-group").forEach((el) => el.classList.remove("is-drop-target"));
+
+  if (group) {
+    const key = group.dataset.bagKey;
+    if (key) {
+      state.itemBags[bagDrag.itemId] = key;
+    } else {
+      delete state.itemBags[bagDrag.itemId];
+    }
+    saveDraft();
+  }
+  bagDrag = null;
+  renderChecklist();
 }
 
 function renderChecklist() {
@@ -452,6 +518,7 @@ function renderChecklist() {
   const toggle = document.querySelector("#viewToggle");
   if (toggle) toggle.hidden = state.bags.length === 0;
   if (!state.bags.length) state.listView = "category";
+  document.querySelectorAll(".view-tab").forEach((tab) => tab.classList.toggle("is-selected", tab.dataset.view === state.listView));
 
   const target = document.querySelector("#checklist");
   target.innerHTML = "";
@@ -1074,18 +1141,6 @@ document.addEventListener("change", (event) => {
     }
   }
 
-  const bagAssign = event.target.closest("[data-assign]");
-  if (bagAssign) {
-    const value = bagAssign.value;
-    if (value) {
-      state.itemBags[bagAssign.dataset.assign] = value;
-    } else {
-      delete state.itemBags[bagAssign.dataset.assign];
-    }
-    if (state.listView === "bag") renderChecklist();
-    saveDraft();
-  }
-
   const buyInput = event.target.closest("[data-buy]");
   if (buyInput) {
     toggleBuyThere(buyInput.dataset.buy);
@@ -1176,6 +1231,8 @@ function setupStickyProgress() {
   window.addEventListener("resize", update, { passive: true });
   update();
 }
+
+document.addEventListener("pointerdown", onBagDragStart);
 
 renderPreferences();
 migrateSavedTrips();

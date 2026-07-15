@@ -1310,16 +1310,72 @@ h2 {
   font-weight: 600;
 }
 
-.bag-assign {
-  grid-column: 1 / -1;
-  min-height: 36px;
-  margin-top: 2px;
-  padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+/* カバンへのドラッグ移動 */
+.bag-drag-hint {
+  margin: 0 2px 12px;
+  color: var(--soft);
+  font-size: 0.86rem;
+}
+
+.item-row.is-draggable {
+  grid-template-columns: 24px 1fr auto auto;
+}
+
+.drag-handle {
+  min-width: 38px;
+  min-height: 38px;
+  border: 0;
   border-radius: var(--radius);
-  background: #101010;
-  color: var(--muted);
-  font-size: 0.85rem;
+  background: transparent;
+  color: var(--soft);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: var(--accent);
+}
+
+.item-row.is-dragging-source {
+  opacity: 0.35;
+}
+
+.drag-clone {
+  position: fixed;
+  z-index: 200;
+  pointer-events: none;
+  gap: 10px;
+  padding: 13px 16px;
+  border: 1px solid rgba(248, 200, 106, 0.55);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.6);
+  opacity: 0.96;
+}
+
+.bag-group {
+  transition: outline-color 140ms ease;
+  outline: 2px dashed transparent;
+  outline-offset: -2px;
+}
+
+.bag-group.is-drop-target {
+  outline-color: rgba(149, 213, 178, 0.7);
+}
+
+.bag-group.is-drop-target > h2 {
+  background: rgba(149, 213, 178, 0.18);
+}
+
+.bag-empty {
+  margin: 0;
+  padding: 16px;
+  color: var(--soft);
+  font-size: 0.86rem;
+  text-align: center;
 }
 
 .buy-there {
