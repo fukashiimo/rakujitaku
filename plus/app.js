@@ -236,7 +236,12 @@ function renderTravelOptions() {
 
 function selectTravelMethod(key) {
   state.travelMethod = state.travelMethod === key ? null : key;
-  renderTravelOptions();
+  // DOMは作り直さず、選択状態だけ更新する（再描画によるチラつき防止）
+  document.querySelectorAll("#travelOptions .travel-card").forEach((card) => {
+    const selected = card.dataset.travel === state.travelMethod;
+    card.classList.toggle("is-selected", selected);
+    card.setAttribute("aria-checked", selected ? "true" : "false");
+  });
 }
 
 // ===== カバン選択 =====
@@ -262,7 +267,13 @@ function toggleBag(key) {
   } else {
     state.bags = state.bags.concat(key);
   }
-  renderBagOptions();
+  // 選択状態だけ更新（再描画によるチラつき防止）
+  const chip = document.querySelector(`#bagOptions [data-bag="${key}"]`);
+  if (chip) {
+    const selected = state.bags.includes(key);
+    chip.classList.toggle("is-selected", selected);
+    chip.setAttribute("aria-pressed", selected ? "true" : "false");
+  }
 }
 
 function getBag(key) {
