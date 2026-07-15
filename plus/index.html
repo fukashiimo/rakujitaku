@@ -107,15 +107,6 @@
 
         <div class="check-stack" id="preferenceList"></div>
 
-        <div class="bag-select">
-          <div class="section-heading">
-            <h2>使うカバン</h2>
-            <span class="subcopy">任意</span>
-          </div>
-          <p class="subcopy">選ぶと、持ち物をカバン別に振り分けられます。</p>
-          <div class="bag-grid" id="bagOptions"></div>
-        </div>
-
         <button class="primary-action full" type="button" id="buildListButton">チェックリストへ</button>
       </section>
 
@@ -142,17 +133,15 @@
           <button class="view-tab" type="button" data-view="bag" role="tab">カバン別</button>
         </div>
 
-        <div class="list-area" id="checklist"></div>
-
-        <section class="buy-there" id="buyThereSection" aria-labelledby="buyThereTitle">
-          <div class="section-heading">
-            <h2 id="buyThereTitle">現地で買うもの</h2>
-            <span class="subcopy">任意</span>
+        <form class="add-form compact" id="addBagForm">
+          <label for="bagName">バッグを追加</label>
+          <div class="add-row">
+            <input id="bagName" name="bagName" type="text" autocomplete="off" placeholder="例：温泉バッグ" />
+            <button type="submit">追加</button>
           </div>
-          <p class="subcopy">持っていかず、旅先で調達するものを選べます。</p>
-          <div class="list-area" id="buyThereList"></div>
-          <div class="suggestions" id="buyThereSuggestions" aria-label="現地で買うものの候補"></div>
-        </section>
+        </form>
+
+        <div class="list-area" id="checklist"></div>
 
         <form class="add-form" id="addForm">
           <label for="itemName">持ち物を追加</label>
@@ -167,6 +156,16 @@
         <section class="history-block" aria-labelledby="historyTitle">
           <h2 id="historyTitle">過去に追加した持ち物</h2>
           <div class="history-list" id="itemHistory"></div>
+        </section>
+
+        <section class="buy-there" id="buyThereSection" aria-labelledby="buyThereTitle">
+          <div class="section-heading">
+            <h2 id="buyThereTitle">現地で買うもの</h2>
+            <span class="subcopy">任意</span>
+          </div>
+          <p class="subcopy">持っていかず、旅先で調達するものを選べます。</p>
+          <div class="list-area" id="buyThereList"></div>
+          <div class="suggestions" id="buyThereSuggestions" aria-label="現地で買うものの候補"></div>
         </section>
 
         <button class="primary-action full" type="button" id="completeButton">完了</button>

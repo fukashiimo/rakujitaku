@@ -73,14 +73,10 @@ const travelMethods = [
   },
 ];
 
-// カバンの選択肢
-const bagOptions = [
-  { key: "suitcase", label: "スーツケース", emoji: "🧳" },
-  { key: "boston", label: "ボストンバッグ", emoji: "👜" },
-  { key: "backpack", label: "リュック", emoji: "🎒" },
-  { key: "shoulder", label: "ショルダーバッグ", emoji: "👝" },
-  { key: "tote", label: "トートバッグ", emoji: "🛍️" },
-  { key: "eco", label: "サブ・エコバッグ", emoji: "🛒" },
+// カバンは最初から大きな2分類にまとめる
+const defaultBags = [
+  { key: "packing", label: "荷造りバッグ", emoji: "🧳", description: "スーツケースやボストンバッグ" },
+  { key: "carry", label: "手荷物", emoji: "🎒", description: "ショルダー、トート、リュックなど日中使用" },
 ];
 
 // 現地で買うものの候補
@@ -124,6 +120,7 @@ const state = {
   nights: 1,
   travelMethod: null,
   bags: [],
+  customBags: [],
   itemBags: {},
   buyThere: [],
   listView: "category",
@@ -244,40 +241,29 @@ function selectTravelMethod(key) {
   });
 }
 
-// ===== カバン選択 =====
-function renderBagOptions() {
-  const target = document.querySelector("#bagOptions");
-  if (!target) return;
-  target.innerHTML = "";
-  bagOptions.forEach((bag) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "bag-chip";
-    button.classList.toggle("is-selected", state.bags.includes(bag.key));
-    button.dataset.bag = bag.key;
-    button.setAttribute("aria-pressed", state.bags.includes(bag.key) ? "true" : "false");
-    button.innerHTML = `<span aria-hidden="true">${bag.emoji}</span><span>${bag.label}</span>`;
-    target.append(button);
-  });
-}
-
-function toggleBag(key) {
-  if (state.bags.includes(key)) {
-    state.bags = state.bags.filter((bagKey) => bagKey !== key);
-  } else {
-    state.bags = state.bags.concat(key);
-  }
-  // 選択状態だけ更新（再描画によるチラつき防止）
-  const chip = document.querySelector(`#bagOptions [data-bag="${key}"]`);
-  if (chip) {
-    const selected = state.bags.includes(key);
-    chip.classList.toggle("is-selected", selected);
-    chip.setAttribute("aria-pressed", selected ? "true" : "false");
-  }
-}
-
 function getBag(key) {
-  return bagOptions.find((bag) => bag.key === key);
+  return getActiveBags().find((bag) => bag.key === key);
+}
+
+function getActiveBags() {
+  return defaultBags.concat(state.customBags);
+}
+
+function createCustomBag(label) {
+  const cleanLabel = label.trim();
+  if (!cleanLabel) return;
+
+  const exists = getActiveBags().some((bag) => bag.label === cleanLabel);
+  if (exists) return;
+
+  state.customBags.push({
+    key: `custom-${crypto.randomUUID()}`,
+    label: cleanLabel,
+    emoji: "👜",
+    description: "",
+  });
+  state.listView = "bag";
+  renderChecklist();
 }
 
 function createItem(name, category, count = null) {
@@ -293,6 +279,46 @@ function createItem(name, category, count = null) {
 function addChecklistItem(items, name, category, count = null) {
   if (items.some((item) => normalizeItemName(item.name) === normalizeItemName(name))) return;
   items.push(createItem(name, category, count));
+}
+
+function inferInitialBagKey(item) {
+  if (item.category === "貴重品" || item.category === "移動") {
+    return "carry";
+  }
+
+  const carryNames = [
+    "スマホ",
+    "財布",
+    "鍵",
+    "身分証",
+    "乗車券",
+    "航空券",
+    "飲み物",
+    "おやつ",
+    "モバイルバッテリー",
+    "イヤホン",
+    "ティッシュ",
+    "ハンカチ",
+    "マスク",
+    "日焼け止め",
+    "常備薬",
+    "酔い止め",
+    "折りたたみ傘",
+    "雨具",
+  ];
+
+  if (carryNames.some((name) => item.name.includes(name))) {
+    return "carry";
+  }
+
+  return "packing";
+}
+
+function assignInitialBags(items) {
+  state.itemBags = {};
+  items.forEach((item) => {
+    state.itemBags[item.id] = inferInitialBagKey(item);
+  });
 }
 
 // 持ち物生成仕様（天気条件は含まない）に沿って持ち物リストを作る
@@ -356,10 +382,10 @@ function buildItems() {
   }
 
   state.items = items;
-  state.itemBags = {};
+  state.customBags = [];
+  assignInitialBags(items);
   state.buyThere = [];
-  // カバンを選んでいれば、振り分けやすいカバン別ビューを既定にする
-  state.listView = state.bags.length ? "bag" : "category";
+  state.listView = "bag";
   state.removedSuggestions = [];
 }
 
@@ -377,7 +403,6 @@ function renderPreferences() {
     target.append(row);
   });
 
-  renderBagOptions();
 }
 
 function itemRowElement(item, draggable = false) {
@@ -411,26 +436,30 @@ function renderCategoryView(target) {
 }
 
 function renderBagView(target) {
-  const groups = state.bags
-    .map((key) => ({
-      key,
-      label: `${getBag(key) ? getBag(key).emoji : ""} ${getBag(key) ? getBag(key).label : key}`.trim(),
-      match: (item) => state.itemBags[item.id] === key,
+  const groups = getActiveBags()
+    .map((bag) => ({
+      key: bag.key,
+      label: `${bag.emoji} ${bag.label}`,
+      description: bag.description,
+      match: (item) => state.itemBags[item.id] === bag.key,
     }))
     .concat([{ key: "", label: "未割り当て", match: (item) => !state.itemBags[item.id] }]);
 
   const hint = document.createElement("p");
   hint.className = "bag-drag-hint";
-  hint.textContent = "⠿ をつまんで、持ち物を別のカバンへドラッグできます。";
+  hint.textContent = "服やスキンケアは荷造りバッグ、日中使うものは手荷物に入れています。⠿ で移動できます。";
   target.append(hint);
 
   groups.forEach((group) => {
     const groupItems = state.items.filter(group.match);
+    if (!group.key && groupItems.length === 0) return;
 
     const block = document.createElement("section");
     block.className = "category bag-group";
     block.dataset.bagKey = group.key;
-    block.innerHTML = `<h2>${group.label}<span class="cat-count">${groupItems.length}</span></h2>`;
+    block.innerHTML =
+      `<h2>${group.label}<span class="cat-count">${groupItems.length}</span></h2>` +
+      (group.description ? `<p class="bag-description">${group.description}</p>` : "");
     if (groupItems.length === 0) {
       const empty = document.createElement("p");
       empty.className = "bag-empty";
@@ -514,15 +543,13 @@ function renderChecklist() {
   const methodLabel = method ? ` · ${method.emoji}${method.label}` : "";
   document.querySelector("#tripSummary").textContent = `${nightsLabel}の支度${methodLabel}`;
 
-  // カバン別ビューはカバンを選んでいるときだけ有効
   const toggle = document.querySelector("#viewToggle");
-  if (toggle) toggle.hidden = state.bags.length === 0;
-  if (!state.bags.length) state.listView = "category";
+  if (toggle) toggle.hidden = false;
   document.querySelectorAll(".view-tab").forEach((tab) => tab.classList.toggle("is-selected", tab.dataset.view === state.listView));
 
   const target = document.querySelector("#checklist");
   target.innerHTML = "";
-  if (state.listView === "bag" && state.bags.length) {
+  if (state.listView === "bag") {
     renderBagView(target);
   } else {
     renderCategoryView(target);
@@ -646,7 +673,9 @@ function addItem(name) {
 
   const sameCount = state.items.filter((item) => normalizeItemName(item.name) === cleanName).length;
   const displayName = sameCount > 0 ? `${cleanName}（その${sameCount + 1}）` : cleanName;
-  state.items.push(createItem(displayName, "追加"));
+  const item = createItem(displayName, "追加");
+  state.items.push(item);
+  state.itemBags[item.id] = inferInitialBagKey(item);
   renderChecklist();
 }
 
@@ -709,6 +738,7 @@ function saveDraft() {
     listBackTarget: state.listBackTarget,
     travelMethod: state.travelMethod,
     bags: state.bags,
+    customBags: state.customBags,
     itemBags: state.itemBags,
     buyThere: state.buyThere,
     listView: state.listView,
@@ -746,7 +776,13 @@ function resumeDraft() {
   state.listBackTarget = draft.listBackTarget || "home";
   state.travelMethod = draft.travelMethod || null;
   state.bags = Array.isArray(draft.bags) ? draft.bags : [];
+  state.customBags = Array.isArray(draft.customBags) ? draft.customBags : [];
   state.itemBags = draft.itemBags && typeof draft.itemBags === "object" ? draft.itemBags : {};
+  state.items.forEach((item) => {
+    if (!state.itemBags[item.id]) {
+      state.itemBags[item.id] = inferInitialBagKey(item);
+    }
+  });
   state.buyThere = Array.isArray(draft.buyThere) ? draft.buyThere : [];
   state.listView = draft.listView === "bag" ? "bag" : "category";
   renderChecklist();
@@ -805,6 +841,26 @@ function setSavedTrips(trips) {
   localStorage.setItem("rakujitaku_plus_saved_trips", JSON.stringify(trips.slice(0, 3)));
 }
 
+function getItemBagNameMap() {
+  return state.items.reduce((map, item) => {
+    map[item.name] = state.itemBags[item.id] || inferInitialBagKey(item);
+    return map;
+  }, {});
+}
+
+function restoreSavedBagAssignments(trip) {
+  state.customBags = Array.isArray(trip.customBags) ? trip.customBags : [];
+  assignInitialBags(state.items);
+
+  const itemBagsByName = trip.itemBagsByName && typeof trip.itemBagsByName === "object" ? trip.itemBagsByName : {};
+  state.items.forEach((item) => {
+    const savedBagKey = itemBagsByName[item.name];
+    if (savedBagKey && getBag(savedBagKey)) {
+      state.itemBags[item.id] = savedBagKey;
+    }
+  });
+}
+
 // 旧データに安定IDを付与（上書き保存の対象特定に使う）
 function migrateSavedTrips() {
   const trips = getSavedTrips();
@@ -857,6 +913,9 @@ function renderSavedTrips() {
       state.activeTripId = trip.id;
       state.nights = trip.nights;
       state.items = trip.itemNames.map((name) => createItem(name, inferCategory(name)));
+      restoreSavedBagAssignments(trip);
+      state.buyThere = [];
+      state.listView = "bag";
       state.listBackTarget = "home";
       renderChecklist();
       showScreen("list");
@@ -945,6 +1004,8 @@ function applyTripData(trip, { name, itemNames, addedItemNames }) {
   trip.nights = state.nights;
   trip.itemNames = itemNames;
   trip.addedItemHistory = addedItemNames;
+  trip.customBags = state.customBags;
+  trip.itemBagsByName = getItemBagNameMap();
 }
 
 function finalizeSave(trips, addedItemNames) {
@@ -959,6 +1020,7 @@ function saveCurrentTrip() {
   const trips = getSavedTrips();
   const itemNames = state.items.map((item) => item.name);
   const addedItemNames = state.items.filter((item) => item.category === "追加").map((item) => item.name);
+  const itemBagsByName = getItemBagNameMap();
   const input = document.querySelector("#tripName");
   const name = input.value.trim();
 
@@ -990,6 +1052,8 @@ function saveCurrentTrip() {
     nights: state.nights,
     itemNames,
     addedItemHistory: addedItemNames,
+    customBags: state.customBags,
+    itemBagsByName,
     usedCount: 1,
     savedAt: new Date().toISOString(),
   };
@@ -1075,12 +1139,6 @@ document.addEventListener("click", (event) => {
   const travelCard = event.target.closest("[data-travel]");
   if (travelCard) {
     selectTravelMethod(travelCard.dataset.travel);
-    return;
-  }
-
-  const bagChip = event.target.closest("[data-bag]");
-  if (bagChip) {
-    toggleBag(bagChip.dataset.bag);
     return;
   }
 
@@ -1176,6 +1234,14 @@ document.querySelector("#addForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const input = document.querySelector("#itemName");
   addItem(input.value);
+  input.value = "";
+  input.focus();
+});
+
+document.querySelector("#addBagForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = document.querySelector("#bagName");
+  createCustomBag(input.value);
   input.value = "";
   input.focus();
 });
