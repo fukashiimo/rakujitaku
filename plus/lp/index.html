@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>らくじたく+｜移動手段とカバンまで考える、旅の支度アプリ</title>
+    <meta
+      name="description"
+      content="移動手段に合わせた持ち物のおすすめ、カバンごとの振り分け、現地で買うものリスト。旅の支度をもっと深く。買い切りのiOSアプリ「らくじたく+」。"
+    />
+    <link rel="canonical" href="https://fukashiimo.github.io/rakujitaku/plus/lp/" />
+    <meta name="theme-color" content="#050505" />
+    <meta name="robots" content="noindex" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="らくじたく+" />
+    <meta property="og:title" content="らくじたく+｜移動手段とカバンまで考える、旅の支度アプリ" />
+    <meta
+      property="og:description"
+      content="移動手段のおすすめ・カバン振り分け・現地で買うものリスト。旅の支度をもっと深く。買い切りのiOSアプリ。"
+    />
+    <meta property="og:url" content="https://fukashiimo.github.io/rakujitaku/plus/lp/" />
+    <meta property="og:locale" content="ja_JP" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050505;
+        --panel: #171717;
+        --panel-2: #202020;
+        --text: #f5f5f4;
+        --muted: #b8bcc7;
+        --soft: #8b93a3;
+        --accent: #f8c86a;
+        --accent-2: #95d5b2;
+        --radius: 12px;
+        font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic",
+          "YuGothic", "Noto Sans JP", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          radial-gradient(circle at 50% -10%, rgba(149, 213, 178, 0.14), transparent 34rem),
+          var(--bg);
+        background-size: 28px 28px, 28px 28px, 100% 100%, 100% 100%;
+        line-height: 1.7;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+          radial-gradient(circle, rgba(149, 213, 178, 0.2) 1px, transparent 1.6px),
+          radial-gradient(circle, rgba(255, 255, 255, 0.14) 1px, transparent 1.6px);
+        background-size: 170px 170px, 95px 95px;
+        animation: starDrift 150s linear infinite;
+      }
+
+      @keyframes starDrift {
+        to {
+          background-position: -70px 1700px, 30px 950px;
+        }
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 1040px);
+        margin: 0 auto;
+        padding: 0 20px 80px;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent-2);
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+      }
+
+      .badge {
+        display: inline-block;
+        margin-bottom: 18px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(149, 213, 178, 0.4);
+        background: rgba(149, 213, 178, 0.1);
+        color: var(--accent-2);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+
+      /* ===== hero ===== */
+      .hero {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 40px;
+        align-items: center;
+        padding: 60px 0 40px;
+      }
+
+      .hero h1 {
+        margin: 0 0 16px;
+        font-size: clamp(2.6rem, 7vw, 4.2rem);
+        line-height: 1.05;
+        letter-spacing: 0.01em;
+      }
+
+      .hero h1 .plus {
+        background: linear-gradient(120deg, var(--accent-2), var(--accent));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .hero .lead {
+        margin: 0 0 12px;
+        font-size: clamp(1.1rem, 2.4vw, 1.4rem);
+        font-weight: 700;
+      }
+
+      .hero .sub {
+        margin: 0 0 28px;
+        color: var(--muted);
+      }
+
+      .cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 54px;
+        padding: 0 24px;
+        border-radius: var(--radius);
+        font-weight: 800;
+        text-decoration: none;
+        transition: transform 130ms ease, box-shadow 200ms ease, border-color 160ms ease;
+      }
+
+      .btn-primary {
+        background: linear-gradient(120deg, var(--accent-2), #cbe8d6);
+        color: #062016;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(149, 213, 178, 0.24);
+      }
+
+      .btn-ghost {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .btn-ghost small {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 600;
+        opacity: 0.7;
+      }
+
+      .hero-shot {
+        justify-self: center;
+      }
+
+      .phone {
+        width: min(260px, 72vw);
+        border-radius: 34px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow:
+          0 30px 70px rgba(0, 0, 0, 0.6),
+          0 0 0 8px rgba(20, 20, 20, 0.9);
+        display: block;
+        animation: floaty 5s ease-in-out infinite;
+      }
+
+      @keyframes floaty {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      /* ===== sections ===== */
+      section {
+        padding: 56px 0;
+      }
+
+      .section-title {
+        text-align: center;
+        font-size: clamp(1.5rem, 4vw, 2.1rem);
+        margin: 0 0 8px;
+      }
+
+      .section-note {
+        text-align: center;
+        color: var(--muted);
+        margin: 0 0 40px;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+
+      .feature {
+        padding: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius);
+        background: linear-gradient(150deg, var(--panel-2), #111);
+        transition: transform 160ms ease, border-color 160ms ease;
+      }
+
+      .feature:hover {
+        transform: translateY(-3px);
+        border-color: rgba(149, 213, 178, 0.35);
+      }
+
+      .feature .ico {
+        font-size: 1.9rem;
+        line-height: 1;
+      }
+
+      .feature h3 {
+        margin: 14px 0 6px;
+        font-size: 1.15rem;
+      }
+
+      .feature p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .feature.wide {
+        grid-column: 1 / -1;
+        background: linear-gradient(150deg, rgba(149, 213, 178, 0.08), #111);
+        border-color: rgba(149, 213, 178, 0.24);
+      }
+
+      /* ===== showcase ===== */
+      .showcase {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        align-items: center;
+      }
+
+      .showcase.reverse .shot {
+        order: 2;
+      }
+
+      .showcase .shot {
+        justify-self: center;
+      }
+
+      .showcase h3 {
+        font-size: clamp(1.3rem, 3.4vw, 1.8rem);
+        margin: 0 0 10px;
+      }
+
+      .showcase p {
+        color: var(--muted);
+        margin: 0;
+      }
+
+      .showcase .tag {
+        color: var(--accent-2);
+        font-weight: 800;
+        font-size: 0.85rem;
+        letter-spacing: 0.06em;
+      }
+
+      /* ===== final ===== */
+      .final {
+        text-align: center;
+        padding: 60px 24px;
+        border: 1px solid rgba(149, 213, 178, 0.24);
+        border-radius: 20px;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(149, 213, 178, 0.12), transparent 60%),
+          rgba(255, 255, 255, 0.03);
+      }
+
+      .final h2 {
+        font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+        margin: 0 0 10px;
+      }
+
+      .final .cta {
+        justify-content: center;
+        margin-top: 26px;
+      }
+
+      .pills {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .pill {
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
+
+      footer {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        color: var(--soft);
+        font-size: 0.85rem;
+        padding: 30px 20px 50px;
+      }
+
+      footer a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      footer a:hover {
+        color: var(--accent-2);
+      }
+
+      @media (max-width: 760px) {
+        .hero {
+          grid-template-columns: 1fr;
+          text-align: center;
+          padding-top: 40px;
+          gap: 28px;
+        }
+        .cta {
+          justify-content: center;
+        }
+        .showcase {
+          grid-template-columns: 1fr;
+          text-align: center;
+          gap: 18px;
+        }
+        .showcase.reverse .shot {
+          order: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div>
+          <span class="badge">買い切り · iOS 近日公開</span>
+          <p class="eyebrow">RAKUJITAKU<span style="color: var(--accent)">+</span></p>
+          <h1>らくじたく<span class="plus">+</span></h1>
+          <p class="lead">移動手段とカバンまで、まるごと支度。</p>
+          <p class="sub">
+            「らくじたく」のシンプルさはそのままに、<strong>どうやって行くか</strong>と<strong>何にどう詰めるか</strong>まで。<br />
+            旅の準備を、もう一歩ラクにする上位版です。
+          </p>
+          <div class="cta">
+            <a class="btn btn-primary" href="../">Webで先行体験</a>
+            <a class="btn btn-ghost" href="#buy">
+              <span> App Store で公開予定 <small>買い切り / iPhone</small> </span>
+            </a>
+          </div>
+        </div>
+        <div class="hero-shot">
+          <img class="phone" src="img/plus_travel.png" alt="らくじたく+ 移動手段の選択画面" />
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">らくじたく+ でできること</h2>
+        <p class="section-note">通常のらくじたくの全機能に、+ ならではの2つが加わります。</p>
+        <div class="features">
+          <div class="feature">
+            <div class="ico">✈️</div>
+            <h3>移動手段でおすすめ</h3>
+            <p>飛行機・新幹線・車・高速バス・船。行き方に合わせて、ネックピローや酔い止め、ETCカードなど必要なものを自動で提案します。</p>
+          </div>
+          <div class="feature">
+            <div class="ico">🧳</div>
+            <h3>カバンごとに振り分け</h3>
+            <p>服やスキンケアは「荷造りバッグ」、日中使うものは「手荷物」へ自動で仕分け。⠿ をつまんでドラッグすれば微調整も一瞬です。</p>
+          </div>
+          <div class="feature">
+            <div class="ico">🛒</div>
+            <h3>現地で買うものリスト</h3>
+            <p>持っていかず、旅先で調達するものも別リストで管理。下着や歯ブラシなど、現地調達派の支度もすっきり。</p>
+          </div>
+          <div class="feature wide">
+            <div class="ico">⭐️</div>
+            <h3>通常らくじたくの全機能も、そのまま</h3>
+            <p>泊数を選ぶだけのリスト自動生成、いつもの支度の保存、途中から再開。使い慣れた基本はすべて入っています。</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="showcase">
+          <img class="phone shot" src="img/plus_travel.png" alt="移動手段の選択" loading="lazy" />
+          <div>
+            <p class="tag">STEP 2 · どうやって行く？</p>
+            <h3>行き方に合わせた持ち物</h3>
+            <p>移動手段を選ぶだけで、その旅にぴったりの持ち物がリストに加わります。飛行機なら機内の快適グッズ、車なら運転まわりの必需品を。</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="showcase reverse">
+          <img class="phone shot" src="img/plus_bags.png" alt="カバン別の振り分け" loading="lazy" />
+          <div>
+            <p class="tag">カバン別ビュー</p>
+            <h3>どのカバンに入れるかまで</h3>
+            <p>持ち物は「荷造りバッグ／手荷物」に最初から自動で振り分け。ドラッグで移動でき、「温泉バッグ」など自分のカバンも追加できます。詰め忘れ・分け忘れをなくします。</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="buy">
+        <div class="final">
+          <span class="badge">COMING SOON</span>
+          <h2>らくじたく+ は買い切りで登場</h2>
+          <p class="section-note" style="margin: 0">
+            一度の購入でずっと使えます。まずはWebで、+ の使い心地をお試しください。
+          </p>
+          <div class="cta">
+            <a class="btn btn-primary" href="../">Webで先行体験</a>
+          </div>
+          <div class="pills">
+            <span class="pill">買い切り</span>
+            <span class="pill">広告なし</span>
+            <span class="pill">オフライン対応</span>
+            <span class="pill">iPhone</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        <a href="../">Webで試す</a>　·　<a href="../../lp/">通常のらくじたく</a>　·　<a href="../../privacy.html">プライバシーポリシー</a>
+      </p>
+      <p>© 2026 らくじたく+</p>
+    </footer>
+  </body>
+</html>
