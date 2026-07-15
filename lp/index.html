@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>らくじたく｜泊数を選ぶだけの持ち物チェックリスト</title>
+    <meta
+      name="description"
+      content="旅行・帰省の持ち物リストを、泊数を選ぶだけで自動作成。登録不要・広告なし・完全オフライン。iPhoneアプリ＆Webで無料で使えます。"
+    />
+    <link rel="canonical" href="https://fukashiimo.github.io/rakujitaku/lp/" />
+    <meta name="theme-color" content="#050505" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="らくじたく" />
+    <meta property="og:title" content="らくじたく｜泊数を選ぶだけの持ち物チェックリスト" />
+    <meta
+      property="og:description"
+      content="泊数を選ぶだけで、旅行・帰省の持ち物リストが完成。登録不要・広告なし・完全オフライン。"
+    />
+    <meta property="og:url" content="https://fukashiimo.github.io/rakujitaku/lp/" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050505;
+        --panel: #171717;
+        --panel-2: #202020;
+        --text: #f5f5f4;
+        --muted: #b8bcc7;
+        --soft: #8b93a3;
+        --accent: #f8c86a;
+        --accent-2: #95d5b2;
+        --radius: 12px;
+        font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic",
+          "YuGothic", "Noto Sans JP", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          radial-gradient(circle at 50% -10%, rgba(248, 200, 106, 0.14), transparent 34rem),
+          var(--bg);
+        background-size: 28px 28px, 28px 28px, 100% 100%, 100% 100%;
+        line-height: 1.7;
+        overflow-x: hidden;
+      }
+
+      /* 流れる星空 */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+          radial-gradient(circle, rgba(248, 200, 106, 0.22) 1px, transparent 1.6px),
+          radial-gradient(circle, rgba(255, 255, 255, 0.14) 1px, transparent 1.6px);
+        background-size: 170px 170px, 95px 95px;
+        animation: starDrift 150s linear infinite;
+      }
+
+      @keyframes starDrift {
+        to {
+          background-position: -70px 1700px, 30px 950px;
+        }
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 1040px);
+        margin: 0 auto;
+        padding: 0 20px 80px;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+      }
+
+      /* ===== hero ===== */
+      .hero {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 40px;
+        align-items: center;
+        padding: 64px 0 40px;
+      }
+
+      .hero h1 {
+        margin: 0 0 16px;
+        font-size: clamp(2.6rem, 7vw, 4.2rem);
+        line-height: 1.05;
+        letter-spacing: 0.01em;
+      }
+
+      .hero .lead {
+        margin: 0 0 12px;
+        font-size: clamp(1.1rem, 2.4vw, 1.4rem);
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .hero .sub {
+        margin: 0 0 28px;
+        color: var(--muted);
+      }
+
+      .cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 54px;
+        padding: 0 24px;
+        border-radius: var(--radius);
+        font-weight: 800;
+        text-decoration: none;
+        transition: transform 130ms ease, box-shadow 200ms ease, border-color 160ms ease;
+      }
+
+      .btn-primary {
+        background: var(--text);
+        color: #070707;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+      }
+
+      .btn-ghost {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .btn-ghost:hover {
+        transform: translateY(-2px);
+        border-color: rgba(248, 200, 106, 0.5);
+      }
+
+      .btn small {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 600;
+        opacity: 0.7;
+        letter-spacing: 0.04em;
+      }
+
+      .hero-shot {
+        justify-self: center;
+        position: relative;
+      }
+
+      .phone {
+        width: min(260px, 72vw);
+        border-radius: 34px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow:
+          0 30px 70px rgba(0, 0, 0, 0.6),
+          0 0 0 8px rgba(20, 20, 20, 0.9);
+        display: block;
+        animation: floaty 5s ease-in-out infinite;
+      }
+
+      @keyframes floaty {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      /* ===== features ===== */
+      .section-title {
+        text-align: center;
+        font-size: clamp(1.5rem, 4vw, 2.1rem);
+        margin: 0 0 8px;
+      }
+
+      .section-note {
+        text-align: center;
+        color: var(--muted);
+        margin: 0 0 40px;
+      }
+
+      section {
+        padding: 56px 0;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 16px;
+      }
+
+      .feature {
+        padding: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius);
+        background: linear-gradient(150deg, var(--panel-2), #111);
+        transition: transform 160ms ease, border-color 160ms ease;
+      }
+
+      .feature:hover {
+        transform: translateY(-3px);
+        border-color: rgba(248, 200, 106, 0.35);
+      }
+
+      .feature .ico {
+        font-size: 1.9rem;
+        line-height: 1;
+      }
+
+      .feature h3 {
+        margin: 14px 0 6px;
+        font-size: 1.15rem;
+      }
+
+      .feature p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      /* ===== shots ===== */
+      .shots {
+        display: flex;
+        gap: 20px;
+        overflow-x: auto;
+        padding: 8px 4px 20px;
+        scroll-snap-type: x mandatory;
+      }
+
+      .shots .phone {
+        flex: none;
+        width: 240px;
+        scroll-snap-align: center;
+        animation: none;
+      }
+
+      /* ===== final cta ===== */
+      .final {
+        text-align: center;
+        padding: 60px 24px;
+        border: 1px solid rgba(248, 200, 106, 0.24);
+        border-radius: 20px;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(248, 200, 106, 0.12), transparent 60%),
+          rgba(255, 255, 255, 0.03);
+      }
+
+      .final h2 {
+        font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+        margin: 0 0 10px;
+      }
+
+      .final .cta {
+        justify-content: center;
+        margin-top: 26px;
+      }
+
+      .pills {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .pill {
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
+
+      footer {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        color: var(--soft);
+        font-size: 0.85rem;
+        padding: 30px 20px 50px;
+      }
+
+      footer a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+
+      footer a:hover {
+        color: var(--accent);
+      }
+
+      @media (max-width: 720px) {
+        .hero {
+          grid-template-columns: 1fr;
+          text-align: center;
+          padding-top: 44px;
+          gap: 30px;
+        }
+        .cta {
+          justify-content: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">RAKUJITAKU</p>
+          <h1>らくじたく</h1>
+          <p class="lead">泊数を選ぶだけ。<br />あとはチェックするだけ。</p>
+          <p class="sub">
+            旅行や帰省の「何を持っていくんだっけ？」を、毎回考えなくていい。<br />
+            泊数を選ぶと持ち物リストが自動でできあがる、いちばんシンプルな支度アプリ。
+          </p>
+          <div class="cta">
+            <a class="btn btn-primary" href="https://apps.apple.com/jp/app/id6788356709">
+              <span> App Store でダウンロード <small>iPhone / 無料</small> </span>
+            </a>
+            <a class="btn btn-ghost" href="../">Webで試す</a>
+          </div>
+        </div>
+        <div class="hero-shot">
+          <img class="phone" src="img/01_home.png" alt="らくじたくのホーム画面" />
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">できること</h2>
+        <p class="section-note">難しい設定はいらない。開いて、選んで、チェックするだけ。</p>
+        <div class="features">
+          <div class="feature">
+            <div class="ico">🧳</div>
+            <h3>泊数を選ぶだけ</h3>
+            <p>日帰り〜長期まで、泊数に合わせて衣類や洗面用品の数まで自動で計算。リストが一瞬で完成します。</p>
+          </div>
+          <div class="feature">
+            <div class="ico">⭐️</div>
+            <h3>いつもの支度を保存</h3>
+            <p>よく行くパターンは「いつもの支度」に保存。次からはワンタップで呼び出して使い回せます。</p>
+          </div>
+          <div class="feature">
+            <div class="ico">⏸️</div>
+            <h3>途中から再開</h3>
+            <p>チェックの途中で閉じても大丈夫。次に開くと「支度の途中」から続きを再開できます。</p>
+          </div>
+          <div class="feature">
+            <div class="ico">📴</div>
+            <h3>登録不要・広告なし・オフライン</h3>
+            <p>アカウント登録は一切なし。広告も出ず、電波がなくても使えます。ずっと無料。</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">画面を見る</h2>
+        <p class="section-note">泊数を選ぶ → 持ち物をチェック → 準備完了。</p>
+        <div class="shots">
+          <img class="phone" src="img/01_home.png" alt="ホーム画面" loading="lazy" />
+          <img class="phone" src="img/02_nights.png" alt="泊数を選ぶ画面" loading="lazy" />
+          <img class="phone" src="img/03_checklist.png" alt="持ち物チェック画面" loading="lazy" />
+          <img class="phone" src="img/04_done.png" alt="準備完了画面" loading="lazy" />
+        </div>
+      </section>
+
+      <section>
+        <div class="final">
+          <h2>さっそく支度をはじめよう</h2>
+          <p class="section-note" style="margin: 0">登録なしで今すぐ使えます。</p>
+          <div class="cta">
+            <a class="btn btn-primary" href="https://apps.apple.com/jp/app/id6788356709">
+              <span> App Store でダウンロード <small>iPhone / 無料</small> </span>
+            </a>
+            <a class="btn btn-ghost" href="../">Webで試す</a>
+          </div>
+          <div class="pills">
+            <span class="pill">登録不要</span>
+            <span class="pill">広告なし</span>
+            <span class="pill">完全オフライン</span>
+            <span class="pill">無料</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        <a href="../privacy.html">プライバシーポリシー</a>　·　<a href="../">Web版</a>
+      </p>
+      <p>© 2026 らくじたく</p>
+    </footer>
+  </body>
+</html>
