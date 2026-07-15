@@ -41,10 +41,17 @@ final class ScreenshotTests: XCTestCase {
                      "コンタクト（2泊分）", "コンタクト液（2泊分）", "メガネ"] {
             tapScrollingTo(app.buttons[name], in: app)
         }
-        tapScrollingTo(app.buttons["完了"], in: app)
-        XCTAssertTrue(app.staticTexts["すべて準備完了"].waitForExistence(timeout: 3))
+        // 完了ボタンは一覧最下部なので、大きめのスワイプで確実に表示させてからタップ
+        var scrolls = 0
+        while !app.buttons["完了"].isHittable, scrolls < 8 {
+            app.swipeUp()
+            scrolls += 1
+        }
+        app.buttons["完了"].tap()
+        XCTAssertTrue(app.staticTexts["すべて準備完了"].waitForExistence(timeout: 5))
 
-        // 4. 完了（CLEAR）画面
+        // 4. 完了（CLEAR）画面（演出を少し待ってから撮影）
+        Thread.sleep(forTimeInterval: 0.8)
         shoot(app, "04_done")
     }
 
