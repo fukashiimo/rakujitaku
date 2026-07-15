@@ -1,7 +1,9 @@
 import SwiftUI
+import StoreKit
 
 struct DoneView: View {
     @EnvironmentObject private var store: AppStore
+    @Environment(\.requestReview) private var requestReview
     @StateObject private var tipJar = TipJar()
 
     var body: some View {
@@ -45,6 +47,17 @@ struct DoneView: View {
             .padding(.bottom, 40)
         }
         .task { await tipJar.load() }
+        .onAppear {
+            guard store.wantsReviewPrompt else { return }
+            store.wantsReviewPrompt = false
+            // CLEAR演出を少し見せてから、完了画面上で評価を依頼する
+            Task {
+                try? await Task.sleep(for: .seconds(1.2))
+                if store.screen == .done {
+                    requestReview()
+                }
+            }
+        }
         .confirmationDialog(
             "保存できるのは3つまで",
             isPresented: Binding(

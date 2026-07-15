@@ -10,8 +10,12 @@ final class AppStore: ObservableObject {
     private static let savedTripsKey = "rakujitaku_saved_trips"
     private static let itemHistoryKey = "rakujitaku_added_item_history"
     private static let draftKey = "rakujitaku_draft"
+    private static let completedCountKey = "rakujitaku_completed_count"
     private static let maxSavedTrips = 3
     private static let maxItemHistory = 20
+
+    /// 完了画面で App の評価をリクエストすべきか（DoneView が消費する）
+    var wantsReviewPrompt = false
 
     @Published var screen: Screen = .home
     @Published var nights = 1
@@ -36,7 +40,7 @@ final class AppStore: ObservableObject {
         // UIテスト時は保存状態をリセットして決定的に実行する
         if ProcessInfo.processInfo.arguments.contains("-uitest-reset") {
             let defaults = UserDefaults.standard
-            [Self.preferencesKey, Self.savedTripsKey, Self.itemHistoryKey, Self.draftKey]
+            [Self.preferencesKey, Self.savedTripsKey, Self.itemHistoryKey, Self.draftKey, Self.completedCountKey]
                 .forEach { defaults.removeObject(forKey: $0) }
         }
         preferences = loadPreferences()
@@ -193,6 +197,13 @@ final class AppStore: ObservableObject {
     func complete() {
         tripName = activeTrip?.name ?? ""
         clearDraft()
+
+        // 支度を完了した回数を記録し、2回目以降の完了で評価を依頼する
+        // （初回は控えめに。実際の表示頻度は OS が制御する）
+        let completedCount = UserDefaults.standard.integer(forKey: Self.completedCountKey) + 1
+        UserDefaults.standard.set(completedCount, forKey: Self.completedCountKey)
+        wantsReviewPrompt = completedCount >= 2
+
         screen = .done
     }
 
