@@ -4,6 +4,8 @@ struct ChecklistView: View {
     @EnvironmentObject private var store: AppStore
     @State private var newItemName = ""
     @FocusState private var inputFocused: Bool
+    @State private var progressPulse = false
+    @State private var sheenOffset: CGFloat = -1.2
 
     var body: some View {
         ScrollView {
@@ -71,18 +73,60 @@ struct ChecklistView: View {
                 Spacer()
                 Text("準備済み")
                     .foregroundStyle(Theme.muted)
+                Text("\(Int((store.progress * 100).rounded()))%")
+                    .font(.system(size: 22, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Theme.accent2)
+                    .shadow(color: Theme.accent2.opacity(0.35), radius: 8)
+                    .scaleEffect(progressPulse ? 1.08 : 1)
             }
 
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.12))
                     Capsule()
-                        .fill(Theme.accent2)
-                        .frame(width: geometry.size.width * store.progress)
-                        .animation(.easeOut(duration: 0.16), value: store.progress)
+                        .fill(Color.white.opacity(0.1))
+                        .shadow(color: .black.opacity(0.45), radius: 3, y: 1)
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.435, green: 0.749, blue: 0.584),
+                                    Theme.accent2,
+                                    Color(red: 0.804, green: 0.933, blue: 0.871),
+                                    Theme.accent2,
+                                    Color(red: 0.435, green: 0.749, blue: 0.584),
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .overlay {
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.clear, .white.opacity(0.58), .clear],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: 64)
+                                .offset(x: sheenOffset * geometry.size.width)
+                                .mask(Capsule())
+                        }
+                        .frame(width: max(0, geometry.size.width * store.progress))
+                        .shadow(color: Theme.accent2.opacity(0.55), radius: 8)
+                        .animation(.easeOut(duration: 0.42), value: store.progress)
+
+                    if store.progress > 0 {
+                        Circle()
+                            .fill(Color.white.opacity(0.9))
+                            .frame(width: 8, height: 8)
+                            .shadow(color: Theme.accent2, radius: 6)
+                            .offset(x: max(4, geometry.size.width * store.progress - 4))
+                            .animation(.easeOut(duration: 0.42), value: store.progress)
+                    }
                 }
             }
-            .frame(height: 8)
+            .frame(height: 14)
         }
         .padding(16)
         .background(
@@ -93,6 +137,20 @@ struct ChecklistView: View {
             RoundedRectangle(cornerRadius: Theme.radius)
                 .stroke(Theme.accent2.opacity(0.22), lineWidth: 1)
         )
+        .scaleEffect(progressPulse ? 1.01 : 1)
+        .animation(.easeOut(duration: 0.26), value: progressPulse)
+        .onAppear {
+            withAnimation(.linear(duration: 2.6).repeatForever(autoreverses: false)) {
+                sheenOffset = 1.2
+            }
+        }
+        .onChange(of: store.checkedCount) { oldValue, newValue in
+            guard newValue > oldValue else { return }
+            progressPulse = true
+            withAnimation(.easeOut(duration: 0.3)) {
+                progressPulse = false
+            }
+        }
     }
 
     private func categorySection(_ category: ItemCategory, items: [PackingItem]) -> some View {
