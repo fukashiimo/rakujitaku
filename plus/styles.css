@@ -1263,7 +1263,53 @@ h2 {
   font-weight: 600;
 }
 
-/* カバンへのドラッグ移動 */
+.bag-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.bag-tab {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.bag-tab strong {
+  color: var(--soft);
+  font-size: 0.82rem;
+}
+
+.bag-tab.is-selected {
+  border-color: rgba(149, 213, 178, 0.55);
+  background: rgba(149, 213, 178, 0.13);
+  color: var(--text);
+}
+
+.bag-tab.is-selected strong {
+  color: var(--accent-2);
+}
+
+.bag-tab.is-drop-target {
+  border-color: var(--accent);
+  background: rgba(248, 200, 106, 0.18);
+  color: var(--text);
+}
+
 .bag-drag-hint {
   margin: 0 2px 12px;
   color: var(--soft);
@@ -1283,7 +1329,25 @@ h2 {
 }
 
 .item-row.is-draggable {
-  grid-template-columns: 24px 1fr auto auto;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto auto;
+}
+
+.bag-select {
+  width: 132px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: #101010;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.bag-select:focus-visible,
+.bag-tab:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
 }
 
 .drag-handle {
@@ -1335,12 +1399,32 @@ h2 {
   background: rgba(149, 213, 178, 0.18);
 }
 
+.bag-unassigned-note {
+  margin: 12px 2px 0;
+  color: var(--soft);
+  font-size: 0.84rem;
+}
+
 .bag-empty {
   margin: 0;
   padding: 16px;
   color: var(--soft);
   font-size: 0.86rem;
   text-align: center;
+}
+
+@media (max-width: 620px) {
+  .item-row.is-draggable {
+    grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  }
+
+  .bag-select {
+    width: 110px;
+  }
+
+  .drag-handle {
+    display: none;
+  }
 }
 
 .buy-there {

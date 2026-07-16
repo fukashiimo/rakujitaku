@@ -124,6 +124,7 @@ const state = {
   itemBags: {},
   buyThere: [],
   listView: "category",
+  activeBagKey: "packing",
   preferences: loadPreferences(),
   items: [],
   removedSuggestions: [],
@@ -263,6 +264,7 @@ function createCustomBag(label) {
     description: "",
   });
   state.listView = "bag";
+  state.activeBagKey = state.customBags[state.customBags.length - 1].key;
   renderChecklist();
 }
 
@@ -386,6 +388,7 @@ function buildItems() {
   assignInitialBags(items);
   state.buyThere = [];
   state.listView = "bag";
+  state.activeBagKey = "packing";
   state.removedSuggestions = [];
 }
 
@@ -405,16 +408,27 @@ function renderPreferences() {
 
 }
 
-function itemRowElement(item, draggable = false) {
+function itemRowElement(item, draggable = false, showBagSelect = false) {
   const row = document.createElement("div");
   row.className = `item-row${item.checked ? " is-checked" : ""}${draggable ? " is-draggable" : ""}`;
   row.dataset.itemId = item.id;
   const handle = draggable
     ? `<button class="drag-handle" type="button" aria-label="${item.name}をドラッグして別のカバンへ" data-drag="${item.id}">⠿</button>`
     : "";
+  const bagSelect = showBagSelect
+    ? `<select class="bag-select" aria-label="${item.name}を入れるバッグ" data-bag-select="${item.id}">
+        ${getActiveBags()
+          .map(
+            (bag) =>
+              `<option value="${bag.key}" ${state.itemBags[item.id] === bag.key ? "selected" : ""}>${bag.emoji} ${bag.label}</option>`,
+          )
+          .join("")}
+      </select>`
+    : "";
   row.innerHTML = `
     <input type="checkbox" id="${item.id}" ${item.checked ? "checked" : ""} data-item="${item.id}" />
     <label for="${item.id}">${item.name}</label>
+    ${bagSelect}
     ${handle}
     <button class="delete-button" type="button" aria-label="${item.name}を削除" data-delete="${item.id}">×</button>
   `;
@@ -436,48 +450,66 @@ function renderCategoryView(target) {
 }
 
 function renderBagView(target) {
-  const groups = getActiveBags()
-    .map((bag) => ({
-      key: bag.key,
-      label: `${bag.emoji} ${bag.label}`,
-      description: bag.description,
-      match: (item) => state.itemBags[item.id] === bag.key,
-    }))
-    .concat([{ key: "", label: "未割り当て", match: (item) => !state.itemBags[item.id] }]);
+  const bags = getActiveBags();
+  if (!bags.some((bag) => bag.key === state.activeBagKey)) {
+    state.activeBagKey = bags[0].key;
+  }
+
+  const bagTabs = document.createElement("div");
+  bagTabs.className = "bag-tabs";
+  bagTabs.setAttribute("role", "tablist");
+  bagTabs.setAttribute("aria-label", "表示するバッグ");
+  bags.forEach((bag) => {
+    const count = state.items.filter((item) => state.itemBags[item.id] === bag.key).length;
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `bag-tab${bag.key === state.activeBagKey ? " is-selected" : ""}`;
+    tab.dataset.bagTab = bag.key;
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", bag.key === state.activeBagKey ? "true" : "false");
+    tab.innerHTML = `<span>${bag.emoji} ${bag.label}</span><strong>${count}</strong>`;
+    bagTabs.append(tab);
+  });
+  target.append(bagTabs);
 
   const hint = document.createElement("p");
   hint.className = "bag-drag-hint";
-  hint.textContent = "服やスキンケアは荷造りバッグ、日中使うものは手荷物に入れています。⠿ で移動できます。";
+  hint.textContent = "バッグを切り替えて確認できます。各持ち物のバッグも変更できます。";
   target.append(hint);
 
-  groups.forEach((group) => {
-    const groupItems = state.items.filter(group.match);
-    if (!group.key && groupItems.length === 0) return;
+  const activeBag = bags.find((bag) => bag.key === state.activeBagKey);
+  const groupItems = state.items.filter((item) => state.itemBags[item.id] === activeBag.key);
+  const block = document.createElement("section");
+  block.className = "category bag-group";
+  block.dataset.bagKey = activeBag.key;
+  block.innerHTML =
+    `<h2>${activeBag.emoji} ${activeBag.label}<span class="cat-count">${groupItems.length}</span></h2>` +
+    (activeBag.description ? `<p class="bag-description">${activeBag.description}</p>` : "");
+  if (groupItems.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "bag-empty";
+    empty.textContent = "このバッグにはまだありません";
+    block.append(empty);
+  } else {
+    groupItems.forEach((item) => block.append(itemRowElement(item, true, true)));
+  }
+  target.append(block);
 
-    const block = document.createElement("section");
-    block.className = "category bag-group";
-    block.dataset.bagKey = group.key;
-    block.innerHTML =
-      `<h2>${group.label}<span class="cat-count">${groupItems.length}</span></h2>` +
-      (group.description ? `<p class="bag-description">${group.description}</p>` : "");
-    if (groupItems.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "bag-empty";
-      empty.textContent = "ここにドラッグ";
-      block.append(empty);
-    } else {
-      groupItems.forEach((item) => block.append(itemRowElement(item, true)));
-    }
-    target.append(block);
-  });
+  const unassigned = state.items.filter((item) => !state.itemBags[item.id]);
+  if (unassigned.length > 0) {
+    const notice = document.createElement("p");
+    notice.className = "bag-unassigned-note";
+    notice.textContent = `未割り当て ${unassigned.length}件。カテゴリ別表示から確認してください。`;
+    target.append(notice);
+  }
 }
 
 // ===== カバンへのドラッグ移動（タッチ対応） =====
 let bagDrag = null;
 
-function bagGroupUnderPoint(x, y) {
+function bagDropTargetUnderPoint(x, y) {
   const el = document.elementFromPoint(x, y);
-  return el ? el.closest(".bag-group") : null;
+  return el ? el.closest(".bag-group, .bag-tab") : null;
 }
 
 function onBagDragStart(event) {
@@ -511,23 +543,24 @@ function onBagDragMove(event) {
   if (!bagDrag) return;
   bagDrag.clone.style.left = `${event.clientX - bagDrag.offsetX}px`;
   bagDrag.clone.style.top = `${event.clientY - bagDrag.offsetY}px`;
-  const group = bagGroupUnderPoint(event.clientX, event.clientY);
-  document.querySelectorAll(".bag-group").forEach((el) => el.classList.toggle("is-drop-target", el === group));
+  const group = bagDropTargetUnderPoint(event.clientX, event.clientY);
+  document.querySelectorAll(".bag-group, .bag-tab").forEach((el) => el.classList.toggle("is-drop-target", el === group));
 }
 
 function onBagDragEnd(event) {
   if (!bagDrag) return;
-  const group = bagGroupUnderPoint(event.clientX, event.clientY);
+  const group = bagDropTargetUnderPoint(event.clientX, event.clientY);
   window.removeEventListener("pointermove", onBagDragMove);
   window.removeEventListener("pointerup", onBagDragEnd);
   window.removeEventListener("pointercancel", onBagDragEnd);
   bagDrag.clone.remove();
-  document.querySelectorAll(".bag-group").forEach((el) => el.classList.remove("is-drop-target"));
+  document.querySelectorAll(".bag-group, .bag-tab").forEach((el) => el.classList.remove("is-drop-target"));
 
   if (group) {
     const key = group.dataset.bagKey;
     if (key) {
       state.itemBags[bagDrag.itemId] = key;
+      state.activeBagKey = key;
     } else {
       delete state.itemBags[bagDrag.itemId];
     }
@@ -675,7 +708,8 @@ function addItem(name) {
   const displayName = sameCount > 0 ? `${cleanName}（その${sameCount + 1}）` : cleanName;
   const item = createItem(displayName, "追加");
   state.items.push(item);
-  state.itemBags[item.id] = inferInitialBagKey(item);
+  const activeBag = state.listView === "bag" ? getBag(state.activeBagKey) : null;
+  state.itemBags[item.id] = activeBag ? activeBag.key : inferInitialBagKey(item);
   renderChecklist();
 }
 
@@ -742,6 +776,7 @@ function saveDraft() {
     itemBags: state.itemBags,
     buyThere: state.buyThere,
     listView: state.listView,
+    activeBagKey: state.activeBagKey,
     updatedAt: Date.now(),
   };
   localStorage.setItem("rakujitaku_plus_draft", JSON.stringify(draft));
@@ -785,6 +820,7 @@ function resumeDraft() {
   });
   state.buyThere = Array.isArray(draft.buyThere) ? draft.buyThere : [];
   state.listView = draft.listView === "bag" ? "bag" : "category";
+  state.activeBagKey = draft.activeBagKey || "packing";
   renderChecklist();
   showScreen("list");
 }
@@ -1150,6 +1186,14 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const bagTab = event.target.closest("[data-bag-tab]");
+  if (bagTab) {
+    state.activeBagKey = bagTab.dataset.bagTab;
+    state.listView = "bag";
+    renderChecklist();
+    return;
+  }
+
   const buyAdd = event.target.closest("[data-buy-add]");
   if (buyAdd) {
     addBuyThere(buyAdd.dataset.buyAdd);
@@ -1197,6 +1241,13 @@ document.addEventListener("change", (event) => {
       item.checked = itemInput.checked;
       renderChecklist();
     }
+  }
+
+  const bagSelect = event.target.closest("[data-bag-select]");
+  if (bagSelect) {
+    state.itemBags[bagSelect.dataset.bagSelect] = bagSelect.value;
+    state.activeBagKey = bagSelect.value;
+    renderChecklist();
   }
 
   const buyInput = event.target.closest("[data-buy]");
