@@ -20,7 +20,7 @@
     <meta property="og:url" content="https://fukashiimo.github.io/rakujitaku/" />
     <meta property="og:locale" content="ja_JP" />
     <meta name="twitter:card" content="summary" />
-    <link rel="stylesheet" href="styles.css?v=20260708m" />
+    <link rel="stylesheet" href="styles.css?v=20260708n" />
   </head>
   <body>
     <main class="shell">
@@ -116,12 +116,16 @@
         </header>
 
         <div class="progress-box">
-          <div>
-            <strong id="progressText">0 / 0</strong>
-            <span>準備済み</span>
+          <div class="progress-head">
+            <div class="progress-count">
+              <strong id="progressText">0 / 0</strong>
+              <span>準備済み</span>
+            </div>
+            <span class="progress-percent" id="progressPercent">0%</span>
           </div>
           <div class="progress-track" aria-hidden="true">
-            <span id="progressBar"></span>
+            <span id="progressBar"><i class="progress-cap"></i></span>
+            <div class="progress-sparks" id="progressSparks"></div>
           </div>
         </div>
 
@@ -192,6 +196,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260708m"></script>
+    <script src="app.js?v=20260708n"></script>
   </body>
 </html>
