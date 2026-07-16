@@ -1249,6 +1249,32 @@ h2 {
   }
 }
 
+@keyframes bagDropPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(149, 213, 178, 0.72), 0 0 0 rgba(149, 213, 178, 0);
+  }
+
+  45% {
+    box-shadow: 0 0 0 5px rgba(149, 213, 178, 0.2), 0 0 24px rgba(149, 213, 178, 0.46);
+  }
+
+  100% {
+    box-shadow: 0 0 0 12px rgba(149, 213, 178, 0), 0 0 0 rgba(149, 213, 178, 0);
+  }
+}
+
+@keyframes bagDropRipple {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.96);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
 @keyframes readyPulse {
   0%,
   100% {
@@ -1498,6 +1524,21 @@ h2 {
   transform: translateY(-1px);
 }
 
+.bag-drop-zone.just-dropped,
+.bag-group.just-dropped {
+  animation: bagDropPulse 760ms cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+.bag-drop-zone.just-dropped::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: calc(var(--radius) - 3px);
+  pointer-events: none;
+  animation: bagDropRipple 760ms ease-out;
+}
+
 .bag-drag-hint {
   margin: 0 2px 12px;
   color: var(--soft);
@@ -1560,6 +1601,11 @@ h2 {
 
 .item-row.is-dragging-source {
   opacity: 0.35;
+}
+
+.item-row.is-pointer-dragging {
+  touch-action: none;
+  user-select: none;
 }
 
 .drag-clone {

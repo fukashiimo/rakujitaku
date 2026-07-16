@@ -524,6 +524,17 @@ function clearBagDropTargets() {
   document.querySelectorAll(".bag-group, .bag-drop-zone").forEach((el) => el.classList.remove("is-drop-target"));
 }
 
+function playBagDropEffect(key) {
+  if (prefersReducedMotion()) return;
+  const target = document.querySelector(`.bag-drop-zone[data-bag-key="${CSS.escape(key)}"]`)
+    || document.querySelector(`.bag-group[data-bag-key="${CSS.escape(key)}"]`);
+  if (!target) return;
+  target.classList.remove("just-dropped");
+  void target.offsetWidth;
+  target.classList.add("just-dropped");
+  window.setTimeout(() => target.classList.remove("just-dropped"), 760);
+}
+
 function cancelPendingBagDrag() {
   if (!bagDragPending) return;
   window.clearTimeout(bagDragPending.timer);
@@ -543,6 +554,7 @@ function beginBagDrag() {
   clone.style.top = `${pending.currentY - pending.offsetY}px`;
   document.body.append(clone);
   row.classList.add("is-dragging-source");
+  row.classList.add("is-pointer-dragging");
   row.dataset.dragMoved = "true";
 
   bagDrag = {
@@ -551,6 +563,7 @@ function beginBagDrag() {
     clone,
     offsetX: pending.offsetX,
     offsetY: pending.offsetY,
+    pointerId: pending.pointerId,
   };
   window.clearTimeout(pending.timer);
   bagDragPending = null;
@@ -589,6 +602,7 @@ function onBagDragEnd(event) {
   removeBagDragListeners();
   bagDrag.clone.remove();
   bagDrag.row.classList.remove("is-dragging-source");
+  bagDrag.row.classList.remove("is-pointer-dragging");
   clearBagDropTargets();
 
   const itemId = bagDrag.itemId;
@@ -600,6 +614,7 @@ function onBagDragEnd(event) {
     saveDraft();
   }
   renderChecklist();
+  if (key && getBag(key)) playBagDropEffect(key);
 }
 
 function onBagDragStart(event) {
@@ -623,6 +638,13 @@ function onBagDragStart(event) {
     timer: null,
   };
   bagDragPending = pending;
+  if (event.pointerId != null && row.setPointerCapture) {
+    try {
+      row.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture can fail if the browser has already cancelled the gesture.
+    }
+  }
   window.addEventListener("pointermove", onBagDragMove, { passive: false });
   window.addEventListener("pointerup", onBagDragEnd);
   window.addEventListener("pointercancel", onBagDragEnd);
