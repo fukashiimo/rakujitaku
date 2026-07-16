@@ -455,26 +455,27 @@ function renderBagView(target) {
     state.activeBagKey = bags[0].key;
   }
 
-  const bagTabs = document.createElement("div");
-  bagTabs.className = "bag-tabs";
-  bagTabs.setAttribute("role", "tablist");
-  bagTabs.setAttribute("aria-label", "表示するバッグ");
+  const bagDropZones = document.createElement("div");
+  bagDropZones.className = "bag-drop-zones";
+  bagDropZones.setAttribute("role", "tablist");
+  bagDropZones.setAttribute("aria-label", "バッグの移動先と表示");
   bags.forEach((bag) => {
     const count = state.items.filter((item) => state.itemBags[item.id] === bag.key).length;
     const tab = document.createElement("button");
     tab.type = "button";
-    tab.className = `bag-tab${bag.key === state.activeBagKey ? " is-selected" : ""}`;
+    tab.className = `bag-drop-zone${bag.key === state.activeBagKey ? " is-selected" : ""}`;
     tab.dataset.bagTab = bag.key;
+    tab.dataset.bagKey = bag.key;
     tab.setAttribute("role", "tab");
     tab.setAttribute("aria-selected", bag.key === state.activeBagKey ? "true" : "false");
-    tab.innerHTML = `<span>${bag.emoji} ${bag.label}</span><strong>${count}</strong>`;
-    bagTabs.append(tab);
+    tab.innerHTML = `<span class="bag-zone-title">${bag.emoji} ${bag.label}</span><strong>${count}</strong><small>ここへ移動</small>`;
+    bagDropZones.append(tab);
   });
-  target.append(bagTabs);
+  target.append(bagDropZones);
 
   const hint = document.createElement("p");
   hint.className = "bag-drag-hint";
-  hint.textContent = "バッグを切り替えて確認できます。各持ち物のバッグも変更できます。";
+  hint.textContent = "持ち物をつまんで、上のバッグエリアへ移動できます。バッグをタップすると一覧を表示します。";
   target.append(hint);
 
   const activeBag = bags.find((bag) => bag.key === state.activeBagKey);
@@ -506,68 +507,128 @@ function renderBagView(target) {
 
 // ===== カバンへのドラッグ移動（タッチ対応） =====
 let bagDrag = null;
+let bagDragPending = null;
 
 function bagDropTargetUnderPoint(x, y) {
   const el = document.elementFromPoint(x, y);
-  return el ? el.closest(".bag-group, .bag-tab") : null;
+  return el ? el.closest(".bag-group, .bag-drop-zone") : null;
 }
 
-function onBagDragStart(event) {
-  const handle = event.target.closest(".drag-handle");
-  if (!handle) return;
-  event.preventDefault();
+function removeBagDragListeners() {
+  window.removeEventListener("pointermove", onBagDragMove);
+  window.removeEventListener("pointerup", onBagDragEnd);
+  window.removeEventListener("pointercancel", onBagDragEnd);
+}
 
-  const row = handle.closest(".item-row");
+function clearBagDropTargets() {
+  document.querySelectorAll(".bag-group, .bag-drop-zone").forEach((el) => el.classList.remove("is-drop-target"));
+}
+
+function cancelPendingBagDrag() {
+  if (!bagDragPending) return;
+  window.clearTimeout(bagDragPending.timer);
+  bagDragPending = null;
+  removeBagDragListeners();
+}
+
+function beginBagDrag() {
+  if (!bagDragPending || bagDrag) return;
+  const pending = bagDragPending;
+  const row = pending.row;
   const rect = row.getBoundingClientRect();
   const clone = row.cloneNode(true);
   clone.classList.add("drag-clone");
   clone.style.width = `${rect.width}px`;
-  clone.style.left = `${rect.left}px`;
-  clone.style.top = `${rect.top}px`;
+  clone.style.left = `${pending.currentX - pending.offsetX}px`;
+  clone.style.top = `${pending.currentY - pending.offsetY}px`;
   document.body.append(clone);
   row.classList.add("is-dragging-source");
+  row.dataset.dragMoved = "true";
 
   bagDrag = {
-    itemId: handle.dataset.drag,
+    itemId: pending.itemId,
+    row,
     clone,
-    offsetX: event.clientX - rect.left,
-    offsetY: event.clientY - rect.top,
+    offsetX: pending.offsetX,
+    offsetY: pending.offsetY,
   };
-
-  window.addEventListener("pointermove", onBagDragMove);
-  window.addEventListener("pointerup", onBagDragEnd);
-  window.addEventListener("pointercancel", onBagDragEnd);
+  window.clearTimeout(pending.timer);
+  bagDragPending = null;
+  pending.event?.preventDefault();
 }
 
 function onBagDragMove(event) {
+  if (!bagDrag && bagDragPending) {
+    bagDragPending.currentX = event.clientX;
+    bagDragPending.currentY = event.clientY;
+    const movedX = event.clientX - bagDragPending.startX;
+    const movedY = event.clientY - bagDragPending.startY;
+    const distance = Math.sqrt(movedX * movedX + movedY * movedY);
+    if (bagDragPending.pointerType === "touch" && distance > 10) {
+      cancelPendingBagDrag();
+      return;
+    }
+    if (bagDragPending.pointerType !== "touch" && distance > 5) {
+      beginBagDrag();
+    }
+  }
   if (!bagDrag) return;
+  event.preventDefault();
   bagDrag.clone.style.left = `${event.clientX - bagDrag.offsetX}px`;
   bagDrag.clone.style.top = `${event.clientY - bagDrag.offsetY}px`;
   const group = bagDropTargetUnderPoint(event.clientX, event.clientY);
-  document.querySelectorAll(".bag-group, .bag-tab").forEach((el) => el.classList.toggle("is-drop-target", el === group));
+  document.querySelectorAll(".bag-group, .bag-drop-zone").forEach((el) => el.classList.toggle("is-drop-target", el === group));
 }
 
 function onBagDragEnd(event) {
-  if (!bagDrag) return;
+  if (!bagDrag) {
+    cancelPendingBagDrag();
+    return;
+  }
   const group = bagDropTargetUnderPoint(event.clientX, event.clientY);
-  window.removeEventListener("pointermove", onBagDragMove);
-  window.removeEventListener("pointerup", onBagDragEnd);
-  window.removeEventListener("pointercancel", onBagDragEnd);
+  removeBagDragListeners();
   bagDrag.clone.remove();
-  document.querySelectorAll(".bag-group, .bag-tab").forEach((el) => el.classList.remove("is-drop-target"));
+  bagDrag.row.classList.remove("is-dragging-source");
+  clearBagDropTargets();
 
-  if (group) {
-    const key = group.dataset.bagKey;
-    if (key) {
-      state.itemBags[bagDrag.itemId] = key;
-      state.activeBagKey = key;
-    } else {
-      delete state.itemBags[bagDrag.itemId];
-    }
+  const itemId = bagDrag.itemId;
+  const key = group?.dataset.bagKey;
+  bagDrag = null;
+  if (key && getBag(key)) {
+    state.itemBags[itemId] = key;
+    state.activeBagKey = key;
     saveDraft();
   }
-  bagDrag = null;
   renderChecklist();
+}
+
+function onBagDragStart(event) {
+  const row = event.target.closest(".item-row.is-draggable");
+  const interactive = event.target.closest("input, select, button");
+  if (!row || interactive) return;
+
+  const rect = row.getBoundingClientRect();
+  const pending = {
+    itemId: row.dataset.itemId,
+    row,
+    pointerType: event.pointerType,
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    currentX: event.clientX,
+    currentY: event.clientY,
+    offsetX: event.clientX - rect.left,
+    offsetY: event.clientY - rect.top,
+    event,
+    timer: null,
+  };
+  bagDragPending = pending;
+  window.addEventListener("pointermove", onBagDragMove, { passive: false });
+  window.addEventListener("pointerup", onBagDragEnd);
+  window.addEventListener("pointercancel", onBagDragEnd);
+  if (event.pointerType === "touch") {
+    pending.timer = window.setTimeout(beginBagDrag, 180);
+  }
 }
 
 function renderChecklist() {
@@ -1306,6 +1367,11 @@ document.addEventListener("click", (event) => {
   }
 
   const itemRow = event.target.closest(".item-row");
+  if (itemRow?.dataset.dragMoved === "true") {
+    event.preventDefault();
+    delete itemRow.dataset.dragMoved;
+    return;
+  }
   const directControl = event.target.closest("input, label, button, select");
   if (itemRow && !directControl) {
     const input = itemRow.querySelector("[data-item]");

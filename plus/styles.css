@@ -1434,51 +1434,68 @@ h2 {
   font-weight: 600;
 }
 
-.bag-tabs {
-  display: flex;
+.bag-drop-zones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
   margin: 0 0 12px;
-  padding: 2px;
-  overflow-x: auto;
-  scrollbar-width: thin;
 }
 
-.bag-tab {
-  display: inline-flex;
-  flex: 0 0 auto;
+.bag-drop-zone {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 13px;
+  gap: 4px 10px;
+  min-height: 76px;
+  padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.04);
   color: var(--muted);
   font-weight: 700;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  touch-action: manipulation;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
-.bag-tab strong {
+.bag-zone-title {
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bag-drop-zone strong {
   color: var(--soft);
-  font-size: 0.82rem;
+  font-size: 1.05rem;
 }
 
-.bag-tab.is-selected {
+.bag-drop-zone small {
+  grid-column: 1 / -1;
+  color: var(--soft);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.bag-drop-zone.is-selected {
   border-color: rgba(149, 213, 178, 0.55);
   background: rgba(149, 213, 178, 0.13);
   color: var(--text);
 }
 
-.bag-tab.is-selected strong {
+.bag-drop-zone.is-selected strong {
   color: var(--accent-2);
 }
 
-.bag-tab.is-drop-target {
+.bag-drop-zone.is-drop-target {
   border-color: var(--accent);
   background: rgba(248, 200, 106, 0.18);
   color: var(--text);
+  transform: translateY(-1px);
 }
 
 .bag-drag-hint {
@@ -1501,6 +1518,8 @@ h2 {
 
 .item-row.is-draggable {
   grid-template-columns: 24px minmax(0, 1fr) auto auto auto;
+  cursor: grab;
+  touch-action: pan-y;
 }
 
 .bag-select {
@@ -1516,7 +1535,7 @@ h2 {
 }
 
 .bag-select:focus-visible,
-.bag-tab:focus-visible {
+.bag-drop-zone:focus-visible {
   outline: 2px solid var(--accent-2);
   outline-offset: 2px;
 }
@@ -1585,6 +1604,15 @@ h2 {
 }
 
 @media (max-width: 620px) {
+  .bag-drop-zones {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bag-drop-zone {
+    min-height: 82px;
+    padding: 11px;
+  }
+
   .item-row.is-draggable {
     grid-template-columns: 24px minmax(0, 1fr) auto auto;
   }
