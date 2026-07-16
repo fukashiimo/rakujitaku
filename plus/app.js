@@ -651,11 +651,76 @@ function removeBuyThere(id) {
   saveDraft();
 }
 
+let prevChecked = 0;
+let displayedPercent = 0;
+let percentRaf = null;
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// ％をカウントアップ演出
+function animateProgressPercent(target) {
+  const el = document.querySelector("#progressPercent");
+  if (!el) return;
+  if (prefersReducedMotion()) {
+    el.textContent = `${target}%`;
+    displayedPercent = target;
+    return;
+  }
+  if (percentRaf) cancelAnimationFrame(percentRaf);
+  const from = displayedPercent;
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / 450);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = `${Math.round(from + (target - from) * eased)}%`;
+    if (t < 1) {
+      percentRaf = requestAnimationFrame(step);
+    } else {
+      displayedPercent = target;
+      percentRaf = null;
+    }
+  };
+  percentRaf = requestAnimationFrame(step);
+}
+
+// バー先端から火花を飛ばす
+function spawnProgressSparks(atPercent, count, forceGold = false, spread = 30) {
+  const layer = document.querySelector("#progressSparks");
+  if (!layer || prefersReducedMotion()) return;
+  for (let i = 0; i < count; i += 1) {
+    const spark = document.createElement("span");
+    spark.className = `spark${forceGold || Math.random() < 0.4 ? " gold" : ""}`;
+    spark.style.left = `${atPercent}%`;
+    spark.style.setProperty("--dx", `${(Math.random() * 2 - 1) * spread}px`);
+    spark.style.setProperty("--dy", `${-(16 + Math.random() * 30)}px`);
+    spark.style.setProperty("--dur", `${(0.5 + Math.random() * 0.4).toFixed(2)}s`);
+    spark.style.setProperty("--delay", `${(Math.random() * 0.12).toFixed(2)}s`);
+    layer.append(spark);
+    setTimeout(() => spark.remove(), 1100);
+  }
+}
+
+// 100%到達の派手なお祝い
+function celebrateProgress() {
+  const box = document.querySelector(".progress-box");
+  if (!box || prefersReducedMotion()) return;
+  box.classList.remove("just-completed");
+  void box.offsetWidth;
+  box.classList.add("just-completed");
+  setTimeout(() => box.classList.remove("just-completed"), 800);
+  for (let i = 0; i < 22; i += 1) {
+    setTimeout(() => spawnProgressSparks(Math.random() * 100, 1, Math.random() < 0.6, 46), i * 18);
+  }
+}
+
 function renderProgress() {
   const total = state.items.length;
   const checked = state.items.filter((item) => item.checked).length;
   const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
   const isComplete = total > 0 && checked === total;
+  const box = document.querySelector(".progress-box");
 
   const progressText = document.querySelector("#progressText");
   const nextText = `${checked} / ${total}`;
@@ -667,7 +732,30 @@ function renderProgress() {
   }
 
   document.querySelector("#progressBar").style.width = `${percent}%`;
-  document.querySelector(".progress-box").classList.toggle("is-complete", isComplete);
+  animateProgressPercent(percent);
+
+  const wasComplete = box.classList.contains("is-complete");
+  box.classList.toggle("is-complete", isComplete);
+
+  // チェックが増えた瞬間の演出（火花・弾み・％ポップ）
+  if (checked > prevChecked) {
+    const percentEl = document.querySelector("#progressPercent");
+    if (percentEl) {
+      percentEl.classList.remove("pop");
+      void percentEl.offsetWidth;
+      percentEl.classList.add("pop");
+    }
+    if (!prefersReducedMotion()) {
+      box.classList.remove("bump");
+      void box.offsetWidth;
+      box.classList.add("bump");
+      spawnProgressSparks(percent, 8);
+    }
+    if (isComplete && !wasComplete) {
+      celebrateProgress();
+    }
+  }
+  prevChecked = checked;
 
   const completeButton = document.querySelector("#completeButton");
   completeButton.disabled = !isComplete;
