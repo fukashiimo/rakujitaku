@@ -624,7 +624,7 @@ h2 {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-.progress-track span {
+.progress-track > span {
   position: relative;
   display: block;
   width: 0;
@@ -857,7 +857,7 @@ h2 {
   transition: color 180ms ease;
 }
 
-.progress-track span {
+.progress-track > span {
   box-shadow: 0 0 10px rgba(149, 213, 178, 0.5);
 }
 
@@ -963,12 +963,12 @@ h2 {
 .screen.is-active .check-row:nth-child(4) { animation-delay: 270ms; }
 
 /* ===== リッチなプログレスバー ===== */
-.progress-track span {
+.progress-track > span {
   overflow: hidden;
 }
 
 /* 流れる光沢 */
-.progress-track span::after {
+.progress-track > span::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1041,7 +1041,7 @@ h2 {
     0 12px 28px rgba(0, 0, 0, 0.34);
 }
 
-.progress-box.is-complete .progress-track span {
+.progress-box.is-complete .progress-track > span {
   background: linear-gradient(100deg, var(--accent-2), #ffe9b0, var(--accent), #ffe9b0, var(--accent-2));
   background-size: 250% 100%;
   box-shadow:
@@ -1063,7 +1063,7 @@ h2 {
   animation: completeFlash 750ms ease;
 }
 
-.progress-box.just-completed .progress-track span {
+.progress-box.just-completed .progress-track > span {
   animation: progressFlow 2.6s linear infinite, fullFlash 750ms ease;
 }
 
